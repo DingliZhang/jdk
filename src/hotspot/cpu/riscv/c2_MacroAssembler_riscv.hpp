@@ -35,6 +35,10 @@
                        VectorRegister vr1, VectorRegister vr2,
                        VectorRegister vrs,
                        bool is_latin, Label& DONE);
+
+  // Return true if the phase output is in the scratch emit size mode.
+  virtual bool in_scratch_emit_size() override;
+
  public:
   void emit_entry_barrier_stub(C2EntryBarrierStub* stub) {}
   static int entry_barrier_stub_size() { return 0; }

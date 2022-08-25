@@ -378,6 +378,11 @@ class MacroAssembler: public Assembler {
   }
 
   static int patch_oop(address insn_addr, address o);
+
+  // Return whether code is emitted to a scratch blob.
+  virtual bool in_scratch_emit_size() {
+    return false;
+  }
   address emit_trampoline_stub(int insts_call_instruction_offset, address target);
   void emit_static_call_stub();
 
