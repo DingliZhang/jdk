@@ -45,6 +45,7 @@ bool emit_shared_stubs_to_interp(CodeBuffer* cb, SharedStubToInterpRequests* sha
   };
   shared_stub_to_interp_requests->sort(by_shared_method);
   MacroAssembler masm(cb);
+  bool has_shared = false;
   for (int i = 0; i < shared_stub_to_interp_requests->length();) {
     address stub = masm.start_a_stub(CompiledStaticCall::to_interp_stub_size());
     if (stub == NULL) {
@@ -53,13 +54,22 @@ bool emit_shared_stubs_to_interp(CodeBuffer* cb, SharedStubToInterpRequests* sha
     }
 
     ciMethod* method = shared_stub_to_interp_requests->at(i).shared_method();
+    int shared = 0;
     do {
       address caller_pc = cb->insts_begin() + shared_stub_to_interp_requests->at(i).call_offset();
       masm.relocate(static_stub_Relocation::spec(caller_pc), relocate_format);
       ++i;
+      ++shared;
     } while (i < shared_stub_to_interp_requests->length() && shared_stub_to_interp_requests->at(i).shared_method() == method);
     masm.emit_static_call_stub();
     masm.end_a_stub();
+    if (UseNewCode && shared > 1) {
+      has_shared = true;
+      tty->print_cr("Saved: %d", (shared - 1) * CompiledStaticCall::to_interp_stub_size());
+    }
+  }
+  if (has_shared) {
+    tty->print_cr("nm_has_shared");
   }
   return true;
 }
