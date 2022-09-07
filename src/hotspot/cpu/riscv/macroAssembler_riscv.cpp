@@ -717,7 +717,7 @@ void MacroAssembler::vncvt_x_x_w(VectorRegister vd, VectorRegister vs, VectorMas
 }
 
 void MacroAssembler::vneg_v(VectorRegister vd, VectorRegister vs) {
-  vrsub_vx(vd, vs, x0);
+  vrsub_vx(vd, x0, vs);
 }
 
 void MacroAssembler::vfneg_v(VectorRegister vd, VectorRegister vs) {
