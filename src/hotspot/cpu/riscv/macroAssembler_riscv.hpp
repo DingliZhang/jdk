@@ -791,6 +791,9 @@ class MacroAssembler: public Assembler {
   int pop_vp(unsigned int bitset, Register stack);
 
   // vext
+  void vmmv_m(VectorRegister vd, VectorRegister vs);
+  void vmclr_m(VectorRegister vd);
+  void vmset_m(VectorRegister vd);
   void vmnot_m(VectorRegister vd, VectorRegister vs);
   void vncvt_x_x_w(VectorRegister vd, VectorRegister vs, VectorMask vm = unmasked);
   void vneg_v(VectorRegister vd, VectorRegister vs);

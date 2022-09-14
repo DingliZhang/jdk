@@ -708,6 +708,18 @@ void MacroAssembler::fneg_d(FloatRegister Rd, FloatRegister Rs) {
   fsgnjn_d(Rd, Rs, Rs);
 }
 
+void MacroAssembler::vmmv_m(VectorRegister vd, VectorRegister vs) {
+  vmand_mm(vd, vs, vs);
+}
+
+void MacroAssembler::vmclr_m(VectorRegister vd) {
+  vmxor_mm(vd, vd, vd);
+}
+
+void MacroAssembler::vmset_m(VectorRegister vd) {
+  vmxnor_mm(vd, vd, vd);
+}
+
 void MacroAssembler::vmnot_m(VectorRegister vd, VectorRegister vs) {
   vmnand_mm(vd, vs, vs);
 }
