@@ -1674,6 +1674,13 @@ enum VectorMask {
   INSN(vsub_vv, 0b1010111, 0b000, 0b000010);
   INSN(vadd_vv, 0b1010111, 0b000, 0b000000);
 
+  // Vector Register Gather Instructions
+  INSN(vrgather_vv,     0b1010111, 0b000, 0b001100);
+  INSN(vrgatherei16_vv, 0b1010111, 0b000, 0b001110);
+
+  // Vector Integer Merge Instructions
+  INSN(vmerge_vvm, 0b1010111, 0b000, 0b010111);
+
 #undef INSN
 
 
@@ -1728,6 +1735,12 @@ enum VectorMask {
   INSN(vsub_vx, 0b1010111, 0b100, 0b000010);
   INSN(vadd_vx, 0b1010111, 0b100, 0b000000);
 
+  // Vector Register Gather Instructions
+  INSN(vrgather_vx, 0b1010111, 0b100, 0b001100);
+
+  // Vector Integer Merge Instructions
+  INSN(vmerge_vxm, 0b1010111, 0b100, 0b010111);
+
 #undef INSN
 
 #define INSN(NAME, op, funct3, funct6)                                                             \
@@ -1780,6 +1793,12 @@ enum VectorMask {
   INSN(vor_vi,    0b1010111, 0b011, 0b001010);
   INSN(vand_vi,   0b1010111, 0b011, 0b001001);
   INSN(vadd_vi,   0b1010111, 0b011, 0b000000);
+
+  // Vector Register Gather Instructions
+  INSN(vrgather_vi, 0b1010111, 0b011, 0b001100);
+
+  // Vector Integer Merge Instructions
+  INSN(vmerge_vim, 0b1010111, 0b011, 0b010111);
 
 #undef INSN
 
