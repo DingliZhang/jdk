@@ -66,7 +66,6 @@ source %{
       case Op_AndReductionV:
       case Op_OrReductionV:
       case Op_XorReductionV:
-      case Op_VectorBlend:
       case Op_VectorCast:
       case Op_VectorCastB2X:
       case Op_VectorCastD2X:
@@ -2244,6 +2243,21 @@ instruct scatter_storeD(indirect mem, vReg src, vReg idx, vReg tmp) %{
     __ vsetvli(t0, x0, Assembler::e64);
     __ vsuxei64_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
                   as_VectorRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector blend ---------------------------------
+
+instruct vblend(vReg dst, vReg src1, vReg src2, vReg mask) %{
+  match(Set dst (VectorBlend (Binary src1 src2)));
+  format %{ "vblend $dst, $src1, $src2" %}
+  ins_encode %{
+    if (as_VectorRegister($mask$$reg) != v0) {
+      __ vmv_v_v(v0, as_VectorRegister($mask$$reg));
+    }
+    __ vmerge_vvm(as_VectorRegister($dst$$reg), as_VectorRegister($src1$$reg),
+                  as_VectorRegister($src2$$reg), Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}
