@@ -66,7 +66,6 @@ source %{
       case Op_AndReductionV:
       case Op_OrReductionV:
       case Op_XorReductionV:
-      case Op_StoreVectorScatter:
       case Op_VectorBlend:
       case Op_VectorCast:
       case Op_VectorCastB2X:
@@ -2213,6 +2212,37 @@ instruct gather_loadD(vReg dst, vmemA mem, vReg idx) %{
   ins_encode %{
     __ vsetvli(t0, x0, Assembler::e64);
     __ vloxei64_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+                  as_VectorRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector Store Scatter -------------------------
+
+instruct scatter_storeS(indirect mem, vReg src, vReg idx) %{
+  predicate(type2aelembytes(Matcher::vector_element_basic_type(n->in(3)->in(1))) == 4);
+  match(Set mem (StoreVectorScatter mem (Binary src idx)));
+  format %{ "scatter_storeS $mem, $idx, $src\t#" %}
+  ins_encode %{
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $src);
+    assert(length_in_bytes == MaxVectorSize, "invalid vector length");
+    __ vsetvli(t0, x0, Assembler::e32);
+    __ vsuxei32_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
+                  as_VectorRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct scatter_storeD(indirect mem, vReg src, vReg idx, vReg tmp) %{
+  predicate(type2aelembytes(Matcher::vector_element_basic_type(n->in(3)->in(1))) == 8);
+  match(Set mem (StoreVectorScatter mem (Binary src idx)));
+  effect(TEMP tmp);
+  format %{ "scatter_storeD $mem, $idx, $src\t#" %}
+  ins_encode %{
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $src);
+    assert(length_in_bytes == MaxVectorSize, "invalid vector length");
+    __ vsetvli(t0, x0, Assembler::e64);
+    __ vsuxei64_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
                   as_VectorRegister($idx$$reg));
   %}
   ins_pipe(pipe_slow);
