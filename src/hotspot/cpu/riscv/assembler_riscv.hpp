@@ -1992,6 +1992,18 @@ enum Nf {
   INSN(vloxei16_v, 0b0000111, 0b101, 0b11, 0b0);
   INSN(vloxei32_v, 0b0000111, 0b110, 0b11, 0b0);
   INSN(vloxei64_v, 0b0000111, 0b111, 0b11, 0b0);
+
+  // Vector unordered indexed store instructions
+  INSN(vsuxei8_v,  0b0100111, 0b000, 0b01, 0b0);
+  INSN(vsuxei16_v, 0b0100111, 0b101, 0b01, 0b0);
+  INSN(vsuxei32_v, 0b0100111, 0b110, 0b01, 0b0);
+  INSN(vsuxei64_v, 0b0100111, 0b111, 0b01, 0b0);
+
+  // Vector ordered indexed store instructions
+  INSN(vsoxei8_v,  0b0100111, 0b000, 0b11, 0b0);
+  INSN(vsoxei16_v, 0b0100111, 0b101, 0b11, 0b0);
+  INSN(vsoxei32_v, 0b0100111, 0b110, 0b11, 0b0);
+  INSN(vsoxei64_v, 0b0100111, 0b111, 0b11, 0b0);
 #undef INSN
 
 #define INSN(NAME, op, width, mop, mew)                                                                  \
