@@ -1160,7 +1160,7 @@ instruct reduce_orI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vReg tmp) %{
   match(Set dst (OrReductionV src1 src2));
   effect(TEMP tmp);
   ins_cost(VEC_COST);
-  format %{ "vmv.s.x $tmp, $src1\t#@reduce_andI\n\t"
+  format %{ "vmv.s.x $tmp, $src1\t#@reduce_orI\n\t"
             "vredor.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
   ins_encode %{
@@ -1178,7 +1178,7 @@ instruct reduce_orL(iRegLNoSp dst, iRegL src1, vReg src2, vReg tmp) %{
   match(Set dst (OrReductionV src1 src2));
   effect(TEMP tmp);
   ins_cost(VEC_COST);
-  format %{ "vmv.s.x $tmp, $src1\t#@reduce_andL\n\t"
+  format %{ "vmv.s.x $tmp, $src1\t#@reduce_orL\n\t"
             "vredor.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
   ins_encode %{
@@ -1198,7 +1198,7 @@ instruct reduce_xorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vReg tmp) %{
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP tmp);
   ins_cost(VEC_COST);
-  format %{ "vmv.s.x $tmp, $src1\t#@reduce_andI\n\t"
+  format %{ "vmv.s.x $tmp, $src1\t#@reduce_xorI\n\t"
             "vredxor.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
   ins_encode %{
@@ -1216,7 +1216,7 @@ instruct reduce_xorL(iRegLNoSp dst, iRegL src1, vReg src2, vReg tmp) %{
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP tmp);
   ins_cost(VEC_COST);
-  format %{ "vmv.s.x $tmp, $src1\t#@reduce_andL\n\t"
+  format %{ "vmv.s.x $tmp, $src1\t#@reduce_xorL\n\t"
             "vredxor.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
   ins_encode %{
