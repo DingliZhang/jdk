@@ -66,7 +66,6 @@ source %{
       case Op_AndReductionV:
       case Op_OrReductionV:
       case Op_XorReductionV:
-      case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
       case Op_VectorBlend:
       case Op_VectorCast:
@@ -2191,4 +2190,30 @@ instruct vclearArray_reg_reg(iRegL_R29 cnt, iRegP_R28 base, Universe dummy,
   %}
 
   ins_pipe(pipe_class_memory);
+%}
+
+// ------------------------------ Vector Load Gather ---------------------------
+
+instruct gather_loadS(vReg dst, vmemA mem, vReg idx) %{
+  predicate(type2aelembytes(Matcher::vector_element_basic_type(n)) == 4);
+  match(Set dst (LoadVectorGather mem idx));
+  format %{ "gather_loadS $dst, $mem, $idx\t#" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e32);
+    __ vloxei32_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+                  as_VectorRegister($idx$$reg));
+ %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct gather_loadD(vReg dst, vmemA mem, vReg idx) %{
+  predicate(type2aelembytes(Matcher::vector_element_basic_type(n)) == 8);
+  match(Set dst (LoadVectorGather mem idx));
+  format %{ "gather_loadD $dst, $mem, $idx\t#" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e64);
+    __ vloxei64_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+                  as_VectorRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
 %}
