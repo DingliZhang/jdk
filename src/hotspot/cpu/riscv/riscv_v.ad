@@ -63,9 +63,6 @@ source %{
       case Op_ExtractS:
       case Op_ExtractUB:
       // Vector API specific
-      case Op_AndReductionV:
-      case Op_OrReductionV:
-      case Op_XorReductionV:
       case Op_VectorCast:
       case Op_VectorCastB2X:
       case Op_VectorCastD2X:
