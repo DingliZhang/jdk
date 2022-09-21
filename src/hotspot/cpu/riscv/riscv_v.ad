@@ -74,7 +74,6 @@ source %{
       case Op_VectorCastL2X:
       case Op_VectorCastS2X:
       case Op_VectorInsert:
-      case Op_VectorLoadConst:
       case Op_VectorLoadMask:
       case Op_VectorLoadShuffle:
       case Op_VectorMaskCmp:
@@ -2256,8 +2255,27 @@ instruct vblend(vReg dst, vReg src1, vReg src2, vReg mask) %{
     if (as_VectorRegister($mask$$reg) != v0) {
       __ vmv_v_v(v0, as_VectorRegister($mask$$reg));
     }
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
     __ vmerge_vvm(as_VectorRegister($dst$$reg), as_VectorRegister($src1$$reg),
                   as_VectorRegister($src2$$reg), Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}
+
+// ------------------------------ Vector Load Const -------------------------------
+
+instruct loadconB(vReg dst, immI0 src) %{
+  predicate(n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorLoadConst src));
+  ins_cost(VEC_COST);
+  format %{ "vid_v $dst\t# generate iota indices" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e8);
+    __ vid_v(as_VectorRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// vector load mask
