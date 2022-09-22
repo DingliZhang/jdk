@@ -71,7 +71,6 @@ source %{
       case Op_VectorCastL2X:
       case Op_VectorCastS2X:
       case Op_VectorInsert:
-      case Op_VectorLoadMask:
       case Op_VectorLoadShuffle:
       case Op_VectorMaskCmp:
       case Op_VectorRearrange:
@@ -2276,3 +2275,14 @@ instruct loadconB(vReg dst, immI0 src) %{
 %}
 
 // vector load mask
+instruct vloadmaskB(vReg dst, vReg src, rFlagsReg cr) %{
+  match(Set dst (VectorLoadMask src));
+  effect(KILL cr);
+  ins_cost(VEC_COST);
+  format %{ "vloadmaskB $dst, $src\t# vector load mask" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e8);
+    __ vmsne_vi(as_VectorRegister($dst$$reg),as_VectorRegister($src$$reg), 0);
+  %}
+  ins_pipe(pipe_slow);
+%}
