@@ -71,7 +71,6 @@ source %{
       case Op_VectorCastL2X:
       case Op_VectorCastS2X:
       case Op_VectorInsert:
-      case Op_VectorLoadShuffle:
       case Op_VectorMaskCmp:
       case Op_VectorRearrange:
       case Op_VectorReinterpret:
@@ -2283,6 +2282,26 @@ instruct vloadmaskB(vReg dst, vReg src, rFlagsReg cr) %{
   ins_encode %{
     __ vsetvli(t0, x0, Assembler::e8);
     __ vmsne_vi(as_VectorRegister($dst$$reg),as_VectorRegister($src$$reg), 0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector shuffle -------------------------------
+
+instruct loadshuffle(vReg dst, vReg src) %{
+  match(Set dst (VectorLoadShuffle src));
+  ins_cost(VEC_COST);
+  format %{ "loadshuffle $dst, $src\t# vector load shuffle" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    if (bt == T_BYTE) {
+      if (as_VectorRegister($dst$$reg) != as_VectorRegister($src$$reg)) {
+        __ vmv_v_v(as_VectorRegister($dst$$reg),as_VectorRegister($src$$reg));
+      }
+    } else {
+      // TODO
+      // __ castX2X_v(as_VectorRegister($dst$$reg), bt, as_VectorRegister($src$$reg), T_BYTE);
+    }
   %}
   ins_pipe(pipe_slow);
 %}
