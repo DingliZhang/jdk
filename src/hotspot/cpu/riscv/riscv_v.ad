@@ -74,7 +74,6 @@ source %{
       case Op_VectorMaskCmp:
       case Op_VectorRearrange:
       case Op_VectorReinterpret:
-      case Op_VectorStoreMask:
       case Op_VectorTest:
       case Op_PopCountVI:
       case Op_PopCountVL:
@@ -2282,6 +2281,21 @@ instruct vloadmaskB(vReg dst, vReg src, rFlagsReg cr) %{
   ins_encode %{
     __ vsetvli(t0, x0, Assembler::e8);
     __ vmsne_vi(as_VectorRegister($dst$$reg),as_VectorRegister($src$$reg), 0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// vector store mask
+instruct vstoremaskB(vReg dst, vReg src, vReg mask) %{
+  match(Set dst (VectorStoreMask src));
+  ins_cost(VEC_COST);
+  format %{ "vstoremaskB $dst, $src\t# vector store mask" %}
+  ins_encode %{
+    if (as_VectorRegister($mask$$reg) != v0) {
+      __ vmmv_m(v0, as_VectorRegister($mask$$reg));
+    }
+    __ vsetvli(t0, x0, Assembler::e8);
+    __ vand_vv(as_VectorRegister($dst$$reg),as_VectorRegister($src$$reg),as_VectorRegister($src$$reg),Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}
