@@ -2260,14 +2260,19 @@ instruct vblend(vReg dst, vReg src1, vReg src2, vReg mask) %{
 
 // ------------------------------ Vector Load Const -------------------------------
 
-instruct loadconB(vReg dst, immI0 src) %{
-  predicate(n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+instruct loadcon(vReg dst, immI0 src) %{
   match(Set dst (VectorLoadConst src));
   ins_cost(VEC_COST);
-  format %{ "vid_v $dst\t# generate iota indices" %}
+  format %{ "vloadcon $dst\t# generate iota indices" %}
   ins_encode %{
-    __ vsetvli(t0, x0, Assembler::e8);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    __ vmset_m(v0);
     __ vid_v(as_VectorRegister($dst$$reg));
+    if (is_floating_point_type(bt)) {
+      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg, as_VectorRegister($dst$$reg);
+    }
   %}
   ins_pipe(pipe_slow);
 %}

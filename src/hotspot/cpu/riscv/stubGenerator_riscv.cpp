@@ -670,6 +670,32 @@ class StubGenerator: public StubCodeGenerator {
   // x29: the number of words in the tail.
   //      x29 < MacroAssembler::zero_words_block_size.
 
+  // Generate indices for iota vector.
+  address generate_iota_indices(const char *stub_name) {
+    __ align(CodeEntryAlignment);
+    StubCodeMark mark(this, "StubRoutines", stub_name);
+    address start = __ pc();
+    // B
+    __ emit_data64(0x0706050403020100, relocInfo::none);
+    __ emit_data64(0x0F0E0D0C0B0A0908, relocInfo::none);
+    // H
+    __ emit_data64(0x0003000200010000, relocInfo::none);
+    __ emit_data64(0x0007000600050004, relocInfo::none);
+    // S
+    __ emit_data64(0x0000000100000000, relocInfo::none);
+    __ emit_data64(0x0000000300000002, relocInfo::none);
+    // D
+    __ emit_data64(0x0000000000000000, relocInfo::none);
+    __ emit_data64(0x0000000000000001, relocInfo::none);
+    // S - FP
+    __ emit_data64(0x3F80000000000000, relocInfo::none); // 0.0f, 1.0f
+    __ emit_data64(0x4040000040000000, relocInfo::none); // 2.0f, 3.0f
+    // D - FP
+    __ emit_data64(0x0000000000000000, relocInfo::none); // 0.0d
+    __ emit_data64(0x3FF0000000000000, relocInfo::none); // 1.0d
+    return start;
+  }
+
   address generate_zero_blocks() {
     Label done;
 
