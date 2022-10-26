@@ -2247,7 +2247,7 @@ instruct vblend(vReg dst, vReg src1, vReg src2, vReg mask) %{
   format %{ "vblend $dst, $src1, $src2" %}
   ins_encode %{
     if (as_VectorRegister($mask$$reg) != v0) {
-      __ vmv_v_v(v0, as_VectorRegister($mask$$reg));
+      __ vmmv_m(v0, as_VectorRegister($mask$$reg));
     }
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
