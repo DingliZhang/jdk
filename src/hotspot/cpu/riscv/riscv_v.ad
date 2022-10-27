@@ -2342,3 +2342,21 @@ instruct vcompress(vReg dst, vReg src, vReg mask) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+instruct vexpand(vReg dst, vReg src, vReg mask, vReg tmp) %{
+  match(Set dst (ExpandV src pg));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vexpand $dst, $src, $mask" %}
+  ins_encode %{
+    if (as_VectorRegister($mask$$reg) != v0) {
+      __ vmmv_m(v0, as_VectorRegister($mask$$reg));
+    }
+    vand_vx(as_VectorRegister($dst$$reg),x0);
+    viota_m(as_VectorRegister($tmp$$reg),v0);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    __ vrgather_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($tmp$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
