@@ -2324,3 +2324,21 @@ instruct loadshuffle(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+// ------------------------------ Compress/Expand Operations -------------------
+
+instruct vcompress(vReg dst, vReg src, vReg mask) %{
+  match(Set dst (CompressV src pg));
+  format %{ "vcompress $dst, $src, $mask" %}
+  ins_encode %{
+    if (as_VectorRegister($mask$$reg) != v0) {
+      __ vmmv_m(v0, as_VectorRegister($mask$$reg));
+    }
+    vand_vx(as_VectorRegister($dst$$reg),x0);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    __ vcompress_vm(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
