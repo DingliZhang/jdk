@@ -2271,7 +2271,7 @@ instruct loadcon(vReg dst, immI0 src) %{
     __ vmset_m(v0);
     __ vid_v(as_VectorRegister($dst$$reg));
     if (is_floating_point_type(bt)) {
-      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg, as_VectorRegister($dst$$reg);
+      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     }
   %}
   ins_pipe(pipe_slow);
@@ -2328,31 +2328,31 @@ instruct loadshuffle(vReg dst, vReg src) %{
 // ------------------------------ Compress/Expand Operations -------------------
 
 instruct vcompress(vReg dst, vReg src, vReg mask) %{
-  match(Set dst (CompressV src pg));
+  match(Set dst (CompressV src mask));
   format %{ "vcompress $dst, $src, $mask" %}
   ins_encode %{
     if (as_VectorRegister($mask$$reg) != v0) {
       __ vmmv_m(v0, as_VectorRegister($mask$$reg));
     }
-    vand_vx(as_VectorRegister($dst$$reg),x0);
+    __ vand_vx(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), x0);
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli(t0, x0, sew);
-    __ vcompress_vm(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+    __ vcompress_vm(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), v0);
   %}
   ins_pipe(pipe_slow);
 %}
 
 instruct vexpand(vReg dst, vReg src, vReg mask, vReg tmp) %{
-  match(Set dst (ExpandV src pg));
+  match(Set dst (ExpandV src mask));
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "vexpand $dst, $src, $mask" %}
   ins_encode %{
     if (as_VectorRegister($mask$$reg) != v0) {
       __ vmmv_m(v0, as_VectorRegister($mask$$reg));
     }
-    vand_vx(as_VectorRegister($dst$$reg),x0);
-    viota_m(as_VectorRegister($tmp$$reg),v0);
+    __ vand_vx(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), x0);
+    __ viota_m(as_VectorRegister($tmp$$reg), v0);
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli(t0, x0, sew);
