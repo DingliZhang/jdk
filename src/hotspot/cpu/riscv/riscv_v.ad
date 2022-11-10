@@ -2360,3 +2360,21 @@ instruct vexpand(vReg dst, vReg src, vReg mask, vReg tmp) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+// ------------------------------ Populate Index to a Vector -------------------
+
+instruct populateindex(vReg dst, iRegIorL2I src1, immI src2, vReg tmp1, iRegI tmp2) %{
+  match(Set dst (PopulateIndex src1 src2));
+  effect(TEMP tmp1, TEMP tmp2);
+  format %{ "populateindex $dst, $src1, $src2\t # populate index" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($src1$$reg));
+    __ vid_v(as_VectorRegister($tmp1$$reg));
+    __ li(as_Register($tmp2$$reg), (int)($src2$$constant));
+    __ vmacc_vx(as_VectorRegister($dst$$reg), as_Register($tmp2$$reg), as_VectorRegister($tmp1$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
