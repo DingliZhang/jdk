@@ -3115,6 +3115,9 @@ public:
   // Stack overflow checking
   virtual void bang_stack_with_offset(int offset) { Unimplemented(); }
 
+  void emit_data64(jlong data, relocInfo::relocType rtype, int format = 0);
+  void emit_data64(jlong data, RelocationHolder const& rspec, int format = 0);
+
   static bool operand_valid_for_add_immediate(long imm) {
     return is_imm_in_range(imm, 12, 0);
   }

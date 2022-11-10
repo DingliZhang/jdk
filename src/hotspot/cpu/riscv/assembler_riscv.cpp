@@ -363,3 +363,24 @@ Address::Address(address target, relocInfo::relocType rtype) : _base(noreg), _of
       ShouldNotReachHere();
   }
 }
+
+void Assembler::emit_data64(jlong data,
+                            relocInfo::relocType rtype,
+                            int format) {
+  if (rtype == relocInfo::none) {
+    emit_int64(data);
+  } else {
+    emit_data64(data, Relocation::spec_simple(rtype), format);
+  }
+}
+
+void Assembler::emit_data64(jlong data,
+                            RelocationHolder const& rspec,
+                            int format) {
+
+  assert(inst_mark() != NULL, "must be inside InstructionMark");
+  // Do not use AbstractAssembler::relocate, which is not intended for
+  // embedded words.  Instead, relocate to the enclosing instruction.
+  code_section()->relocate(inst_mark(), rspec, format);
+  emit_int64(data);
+}
