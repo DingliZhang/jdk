@@ -192,4 +192,8 @@
                          VectorRegister tmp1, VectorRegister tmp2,
                          bool is_double, bool is_min);
 
+ void vector_signum_rvv(VectorRegister dst,
+                        VectorRegister src, VectorRegister zero,
+                        VectorRegister one, VectorRegister vtmp, BasicType bt);
+
 #endif // CPU_RISCV_C2_MACROASSEMBLER_RISCV_HPP

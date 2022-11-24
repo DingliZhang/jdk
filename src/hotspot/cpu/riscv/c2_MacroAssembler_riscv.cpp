@@ -1676,3 +1676,33 @@ void C2_MacroAssembler::reduce_minmax_FD_v(FloatRegister dst,
   bind(L_done);
   vfmv_f_s(dst, tmp1);
 }
+
+void C2_MacroAssembler::vector_signum_rvv(VectorRegister dst, VectorRegister src, VectorRegister zero,
+                                          VectorRegister one, VectorRegister vtmp, BasicType bt) {
+    assert_different_registers(dst, src, zero, one, vtmp);
+
+    vor_vv(vtmp, src, src);
+    vfsgnjx_vv(src, src, src);
+    vmflt_vv(v0, zero, src);
+
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    vsetvli(t0, x0, sew);
+
+    switch (bt) {
+    case T_FLOAT:
+      vand_vi(vtmp, vtmp, min_jint); // Extract the sign bit of float value in every lane of src
+      vor_vi(vtmp, vtmp, jint_cast(1.0)); // OR it with +1 to make the final result +1 or -1 depending
+                                        // on the sign of the float value
+      break;
+    case T_DOUBLE:
+      li(t0, min_jlong);
+      vand_vx(vtmp, vtmp, t0);
+      vor_vi(vtmp, vtmp, jlong_cast(1.0));
+      break;
+    default:
+      assert(false, "unsupported");
+      ShouldNotReachHere();
+    }
+    vmerge_vvm(dst, vtmp, src, Assembler::v0_t); // Select either from src or vtmp based on the predicate register pgtmp
+                                                 // Result in dst
+}
