@@ -2378,3 +2378,16 @@ instruct populateindex(vReg dst, iRegIorL2I src1, immI src2, vReg tmp1, iRegI tm
   %}
   ins_pipe(pipe_slow);
 %}
+
+instruct vsignum(vReg dst, vReg src, vReg zero, vReg one, vReg tmp) %{
+  match(Set dst (SignumVF src (Binary zero one)));
+  match(Set dst (SignumVD src (Binary zero one)));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vsignum $dst, $src\t# vector. KILL $tmp" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_signum_rvv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($zero$$reg),
+                         as_VectorRegister($one$$reg), as_VectorRegister($tmp$$reg), bt);
+  %}
+  ins_pipe(pipe_slow);
+%}
