@@ -1697,11 +1697,17 @@ enum VectorMask {
   INSN(vrgather_vv,     0b1010111, 0b000, 0b001100);
   INSN(vrgatherei16_vv, 0b1010111, 0b000, 0b001110);
 
-  // Vector Integer Merge Instructions
-  INSN(vmerge_vvm, 0b1010111, 0b000, 0b010111);
-
 #undef INSN
 
+#define INSN(NAME, op, funct3, vm, funct6)                                                         \
+  void NAME(VectorRegister Vd, VectorRegister Vs2, VectorRegister Vs1) {                           \
+    patch_VArith(op, Vd, funct3, Vs1->raw_encoding(), Vs2, vm, funct6);                            \
+  }
+
+  // Vector Integer Merge Instructions
+  INSN(vmerge_vvm, 0b1010111, 0b000, 0b0,0b010111);
+
+#undef INSN
 
 #define INSN(NAME, op, funct3, funct6)                                                             \
   void NAME(VectorRegister Vd, VectorRegister Vs2, Register Rs1, VectorMask vm = unmasked) {       \
@@ -1757,8 +1763,15 @@ enum VectorMask {
   // Vector Register Gather Instructions
   INSN(vrgather_vx, 0b1010111, 0b100, 0b001100);
 
+#undef INSN
+
+#define INSN(NAME, op, funct3, vm, funct6)                                                         \
+  void NAME(VectorRegister Vd, VectorRegister Vs2, Register Rs1) {                                 \
+    patch_VArith(op, Vd, funct3, Rs1->raw_encoding(), Vs2, vm, funct6);                            \
+  }
+
   // Vector Integer Merge Instructions
-  INSN(vmerge_vxm, 0b1010111, 0b100, 0b010111);
+  INSN(vmerge_vxm, 0b1010111, 0b100, 0b0, 0b010111);
 
 #undef INSN
 
@@ -1796,6 +1809,16 @@ enum VectorMask {
 
 #undef INSN
 
+#define INSN(NAME, op, funct3, vm, funct6)                                                             \
+  void NAME(VectorRegister Vd, VectorRegister Vs2, FloatRegister Rs1) {  \
+    patch_VArith(op, Vd, funct3, Rs1->raw_encoding(), Vs2, vm, funct6);                            \
+  }
+
+  // Vector Floating-Point Merge Instruction
+  INSN(vfmerge_vfm,  0b1010111, 0b101, 0b0, 0b010111);
+
+#undef INSN
+
 #define INSN(NAME, op, funct3, funct6)                                                             \
   void NAME(VectorRegister Vd, VectorRegister Vs2, int32_t imm, VectorMask vm = unmasked) {        \
     guarantee(is_imm_in_range(imm, 5, 0), "imm is invalid");                                       \
@@ -1816,8 +1839,16 @@ enum VectorMask {
   // Vector Register Gather Instructions
   INSN(vrgather_vi, 0b1010111, 0b011, 0b001100);
 
+#undef INSN
+
+#define INSN(NAME, op, funct3, vm, funct6)                                                         \
+  void NAME(VectorRegister Vd, VectorRegister Vs2, int32_t imm) {                                  \
+    guarantee(is_imm_in_range(imm, 5, 0), "imm is invalid");                                       \
+    patch_VArith(op, Vd, funct3, (uint32_t)imm & 0x1f, Vs2, vm, funct6);                           \
+  }
+
   // Vector Integer Merge Instructions
-  INSN(vmerge_vim, 0b1010111, 0b011, 0b010111);
+  INSN(vmerge_vim, 0b1010111, 0b011, 0b0, 0b010111);
 
 #undef INSN
 
