@@ -1676,3 +1676,36 @@ void C2_MacroAssembler::reduce_minmax_FD_v(FloatRegister dst,
   bind(L_done);
   vfmv_f_s(dst, tmp1);
 }
+
+void C2_MacroAssembler::rvv_compare(BasicType bt, VectorRegister zn, VectorRegister zm, int cond) {
+  Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+  vsetvli(t0, x0, sew);
+
+  assert(pg->is_governing(), "This register has to be a governing predicate register");
+  if (bt == T_FLOAT || bt == T_DOUBLE) {
+    switch (cond) {
+      case BoolTest::eq: vmfeq_vv(v0, zn, zm, Assembler::v0_t); break;
+      case BoolTest::ne: vmfne_vv(v0, zn, zm, Assembler::v0_t); break;
+      case BoolTest::le: vmfle_vv(v0, zm, zn, Assembler::v0_t); break;
+      case BoolTest::ge: vmfle_vv(v0, zn, zm, Assembler::v0_t); break;
+      case BoolTest::lt: vmflt_vv(v0, zm, zn, Assembler::v0_t); break;
+      case BoolTest::gt: vmflt_vv(v0, zn, zm, Assembler::v0_t); break;
+      default:
+        assert(false, "unsupported compare condition");
+        ShouldNotReachHere();
+    }
+  } else {
+    assert(is_integral_type(bt), "unsupported element type");
+    switch (cond) {
+      case BoolTest::eq: vmseq_vv(v0, zn, zm, Assembler::v0_t); break;
+      case BoolTest::ne: vmsne_vv(v0, zn, zm, Assembler::v0_t); break;
+      case BoolTest::le: vmsle_vv(v0, zm, zn, Assembler::v0_t); break;
+      case BoolTest::ge: vmsle_vv(v0, zn, zm, Assembler::v0_t); break;
+      case BoolTest::lt: vmslt_vv(v0, zm, zn, Assembler::v0_t); break;
+      case BoolTest::gt: vmslt_vv(v0, zn, zm, Assembler::v0_t); break;
+      default:
+        assert(false, "unsupported compare condition");
+        ShouldNotReachHere();
+    }
+  }
+}

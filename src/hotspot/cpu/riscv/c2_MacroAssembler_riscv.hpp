@@ -191,5 +191,6 @@
                          FloatRegister src1, VectorRegister src2,
                          VectorRegister tmp1, VectorRegister tmp2,
                          bool is_double, bool is_min);
+ void rvv_compare(BasicType bt, VectorRegister zn, VectorRegister zm, int cond);
 
 #endif // CPU_RISCV_C2_MACROASSEMBLER_RISCV_HPP
