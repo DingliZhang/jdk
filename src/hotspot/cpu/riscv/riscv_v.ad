@@ -799,6 +799,26 @@ instruct vnegD(vReg dst, vReg src) %{
   ins_pipe(pipe_slow);
 %}
 
+instruct vmv_s2x(iRegIorL2I src1, vReg tmp) %{
+  effect(TEMP tmp);
+  ins_cost(VEC_COST);
+  format %{ "vmv.s.x $tmp, $src1\n\t"%}
+  ins_encode %{
+    __ vmv_s_x(as_VectorRegister($tmp$$reg), $src1$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmv_x2s(iRegINoSp dst, vReg tmp) %{
+  effect(TEMP tmp);
+  ins_cost(VEC_COST);
+  format %{ "vmv.x.s $tmp, $src1\n\t"%}
+  ins_encode %{
+    __ vmv_x_s($dst$$Register, as_VectorRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 // vector add reduction
 
 instruct reduce_addB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vReg tmp) %{
@@ -809,12 +829,12 @@ instruct reduce_addB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vReg tmp) %{
   format %{ "vmv.s.x $tmp, $src1\t#@reduce_addB\n\t"
             "vredsum.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
-  ins_encode %{
+  expand %{
     __ vsetvli(t0, x0, Assembler::e8);
-    __ vmv_s_x(as_VectorRegister($tmp$$reg), $src1$$Register);
+    vmv_s2x(as_VectorRegister($tmp$$reg), $src1$$Register);
     __ vredsum_vs(as_VectorRegister($tmp$$reg), as_VectorRegister($src2$$reg),
                   as_VectorRegister($tmp$$reg));
-    __ vmv_x_s($dst$$Register, as_VectorRegister($tmp$$reg));
+    vmv_x2s($dst$$Register, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -827,12 +847,12 @@ instruct reduce_addS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vReg tmp) %{
   format %{ "vmv.s.x $tmp, $src1\t#@reduce_addS\n\t"
             "vredsum.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
-  ins_encode %{
+  expand %{
     __ vsetvli(t0, x0, Assembler::e16);
-    __ vmv_s_x(as_VectorRegister($tmp$$reg), $src1$$Register);
+    vmv_s2x(as_VectorRegister($tmp$$reg), $src1$$Register);
     __ vredsum_vs(as_VectorRegister($tmp$$reg), as_VectorRegister($src2$$reg),
                   as_VectorRegister($tmp$$reg));
-    __ vmv_x_s($dst$$Register, as_VectorRegister($tmp$$reg));
+    vmv_x2s($dst$$Register, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -845,12 +865,12 @@ instruct reduce_addI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vReg tmp) %{
   format %{ "vmv.s.x $tmp, $src1\t#@reduce_addI\n\t"
             "vredsum.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
-  ins_encode %{
+  expand %{
     __ vsetvli(t0, x0, Assembler::e32);
-    __ vmv_s_x(as_VectorRegister($tmp$$reg), $src1$$Register);
+    vmv_s2x(as_VectorRegister($tmp$$reg), $src1$$Register);
     __ vredsum_vs(as_VectorRegister($tmp$$reg), as_VectorRegister($src2$$reg),
                   as_VectorRegister($tmp$$reg));
-    __ vmv_x_s($dst$$Register, as_VectorRegister($tmp$$reg));
+    vmv_x2s($dst$$Register, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -863,12 +883,12 @@ instruct reduce_addL(iRegLNoSp dst, iRegL src1, vReg src2, vReg tmp) %{
   format %{ "vmv.s.x $tmp, $src1\t#@reduce_addL\n\t"
             "vredsum.vs $tmp, $src2, $tmp\n\t"
             "vmv.x.s  $dst, $tmp" %}
-  ins_encode %{
+  expand %{
     __ vsetvli(t0, x0, Assembler::e64);
-    __ vmv_s_x(as_VectorRegister($tmp$$reg), $src1$$Register);
+    vmv_s2x(as_VectorRegister($tmp$$reg), $src1$$Register);
     __ vredsum_vs(as_VectorRegister($tmp$$reg), as_VectorRegister($src2$$reg),
                   as_VectorRegister($tmp$$reg));
-    __ vmv_x_s($dst$$Register, as_VectorRegister($tmp$$reg));
+    vmv_x2s($dst$$Register, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
