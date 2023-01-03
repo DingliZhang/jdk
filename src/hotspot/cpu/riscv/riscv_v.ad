@@ -2229,6 +2229,30 @@ instruct gather_loadD(vReg dst, vmemA mem, vReg idx) %{
   ins_pipe(pipe_slow);
 %}
 
+instruct gather_loadS_masked(vReg dst, vmemA mem, pRegGov pg, vReg idx) %{
+  predicate(type2aelembytes(Matcher::vector_element_basic_type(n)) == 4);
+  match(Set dst (LoadVectorGatherMasked mem (Binary idx pg)));
+  format %{ "gather_loadS_masked $dst, $pg, $mem, $idx\t#" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e32);
+    __ vloxei32_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+                  as_VectorRegister($idx$$reg), Assembler::v0_t);
+ %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct gather_loadD_masked(vReg dst, vmemA mem, pRegGov pg, vReg idx) %{
+  predicate(type2aelembytes(Matcher::vector_element_basic_type(n)) == 8);
+  match(Set dst (LoadVectorGatherMasked mem (Binary idx pg)));
+  format %{ "gather_loadD_masked $dst, $pg, $mem, $idx\t#" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e64);
+    __ vloxei64_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+                  as_VectorRegister($idx$$reg), Assembler::v0_t);
+ %}
+  ins_pipe(pipe_slow);
+%}
+
 // ------------------------------ Vector Store Scatter -------------------------
 
 instruct scatter_storeS(indirect mem, vReg src, vReg idx) %{
