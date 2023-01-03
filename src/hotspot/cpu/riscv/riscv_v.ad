@@ -2482,3 +2482,15 @@ instruct vcmove(vReg dst, vReg src1, vReg src2, immI cond, cmpOp copnd) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+instruct rearrange(vReg dst, vReg src, vReg shuffle) %{
+  match(Set dst (VectorRearrange src shuffle));
+  format %{ "rearrange $dst, $src, $shuffle" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    __ vrgather_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
