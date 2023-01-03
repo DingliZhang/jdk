@@ -2391,3 +2391,25 @@ instruct vsignum(vReg dst, vReg src, vReg zero, vReg one, vReg tmp) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+instruct vcmove(vReg dst, vReg src1, vReg src2, immI cond, cmpOp copnd) %{
+  predicate(n->in(1)->in(2)->get_int() == BoolTest::ne);
+  match(Set dst (CMoveVF (Binary copnd cond) (Binary src1 src2)));
+  match(Set dst (CMoveVD (Binary copnd cond) (Binary src1 src2)));
+  effect(TEMP pgtmp);
+  format %{ "vcmove.$copnd $dst, $src1, $src2\t# vector conditional move fp. KILL $pgtmp" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_compare(bt, as_VectorRegister($src1$$reg), as_VectorRegister($src2$$reg), (int)($cond$$constant));
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli(t0, x0, sew);
+    if (is_floating_point_type(bt)) {
+      __ vfmerge_vfm(as_VectorRegister($dst$$reg), as_VectorRegister($src1$$reg),
+                  as_VectorRegister($src2$$reg), Assembler::v0_t);
+    } else {
+      __ vmerge_vvm(as_VectorRegister($dst$$reg), as_VectorRegister($src1$$reg),
+                  as_VectorRegister($src2$$reg), Assembler::v0_t);
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
