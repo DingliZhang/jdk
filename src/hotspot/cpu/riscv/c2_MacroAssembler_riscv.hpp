@@ -192,6 +192,8 @@
                          VectorRegister tmp1, VectorRegister tmp2,
                          bool is_double, bool is_min);
 
+ void rvv_compare(BasicType bt, VectorRegister zn, VectorRegister zm, int cond);
+
  void vector_signum_rvv(VectorRegister dst,
                         VectorRegister src, VectorRegister zero,
                         VectorRegister one, VectorRegister vtmp, BasicType bt);
