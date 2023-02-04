@@ -124,7 +124,7 @@ inline T Atomic::PlatformCmpxchg<4>::operator()(T volatile* dest __attribute__((
   if (order != memory_order_relaxed) {
     FULL_MEM_BARRIER;
   }
-  return rv;
+  return old_value;
 }
 
 template<size_t byte_size>
