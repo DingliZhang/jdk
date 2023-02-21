@@ -192,6 +192,9 @@
                          VectorRegister tmp1, VectorRegister tmp2,
                          bool is_double, bool is_min, int length_in_bytes);
 
+ void vector_castX2X(VectorRegister dst, BasicType dst_type,
+                     VectorRegister src, BasicType src_type);
+
  void rvv_reduce_integral(Register dst, VectorRegister tmp,
                           Register src1, VectorRegister src2,
                           BasicType bt, int opc, int length_in_bytes);

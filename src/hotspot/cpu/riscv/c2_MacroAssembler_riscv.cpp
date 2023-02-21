@@ -1660,6 +1660,180 @@ void C2_MacroAssembler::reduce_minmax_FD_v(FloatRegister dst,
   vfmv_f_s(dst, tmp1);
 }
 
+void C2_MacroAssembler::vector_castX2X(VectorRegister dst, BasicType dst_type,
+                                        VectorRegister src, BasicType src_type) {
+  if (src_type == T_BYTE) {
+    switch (dst_type) {
+    case T_SHORT:
+      vsetvli(t0, x0, Assembler::e16);
+      vsext_vf2(dst, src);
+      break;
+    case T_INT:
+      vsetvli(t0, x0, Assembler::e32);
+      vsext_vf4(dst, src);
+      break;
+    case T_LONG:
+      vsetvli(t0, x0, Assembler::e64);
+      vsext_vf8(dst, src);
+      break;
+    case T_FLOAT:
+      vsetvli(t0, x0, Assembler::e32);
+      vsext_vf4(dst, src);
+      vfcvt_f_x_v(dst, dst);
+      break;
+    case T_DOUBLE:
+      vsetvli(t0, x0, Assembler::e64);
+      vsext_vf8(dst, src);
+      vfcvt_f_x_v(dst, dst);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  } else if (src_type == T_SHORT) {
+    switch (dst_type) {
+    case T_BYTE:
+      vsetvli(t0, x0, Assembler::e8);
+      vnsra_wx(dst, src, x0);
+      break;
+    case T_INT:
+      vsetvli(t0, x0, Assembler::e32);
+      vsext_vf2(dst, src);
+      break;
+    case T_LONG:
+      vsetvli(t0, x0, Assembler::e64);
+      vsext_vf4(dst, src);
+      break;
+    case T_FLOAT:
+      vsetvli(t0, x0, Assembler::e16);
+      vfwcvt_f_x_v(dst, src);
+      break;
+    case T_DOUBLE:
+      vsetvli(t0, x0, Assembler::e64);
+      vsext_vf4(dst, src);
+      vfcvt_f_x_v(dst, dst);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  } else if (src_type == T_INT) {
+    switch (dst_type) {
+    case T_BYTE:
+      vsetvli(t0, x0, Assembler::e16);
+      vnsra_wx(dst, src, x0);
+      vsetvli(t0, x0, Assembler::e8);
+      vnsra_wx(dst, dst, x0);
+      break;
+    case T_SHORT:
+      vsetvli(t0, x0, Assembler::e16);
+      vnsra_wx(dst, src, x0);
+      break;
+    case T_LONG:
+      vsetvli(t0, x0, Assembler::e32);
+      vwadd_vx(dst, src, x0);
+      break;
+    case T_FLOAT:
+      vsetvli(t0, x0, Assembler::e32);
+      vfcvt_f_x_v(dst, src);
+      break;
+    case T_DOUBLE:
+      vsetvli(t0, x0, Assembler::e32);
+      vfwcvt_f_x_v(dst, dst);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  }else if (src_type == T_LONG) {
+    switch (dst_type) {
+    case T_BYTE:
+      vsetvli(t0, x0, Assembler::e32);
+      vnsra_wx(dst, src, x0);
+      vsetvli(t0, x0, Assembler::e16);
+      vnsra_wx(dst, dst, x0);
+      vsetvli(t0, x0, Assembler::e8);
+      vnsra_wx(dst, dst, x0);
+      break;
+    case T_SHORT:
+      vsetvli(t0, x0, Assembler::e32);
+      vnsra_wx(dst, src, x0);
+      vsetvli(t0, x0, Assembler::e16);
+      vnsra_wx(dst, dst, x0);
+      break;
+    case T_INT:
+      vsetvli(t0, x0, Assembler::e32);
+      vnsra_wx(dst, src, x0);
+      break;
+    case T_FLOAT:
+      vsetvli(t0, x0, Assembler::e32);
+      vfncvt_f_x_w(dst, src);
+      break;
+    case T_DOUBLE:
+      vsetvli(t0, x0, Assembler::e64);
+      vfcvt_f_x_v(dst, dst);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  }else if (src_type == T_FLOAT) {
+    switch (dst_type) {
+    case T_BYTE:
+      vsetvli(t0, x0, Assembler::e16);
+      vfncvt_x_f_w(dst, src);
+      vsetvli(t0, x0, Assembler::e8);
+      vnsra_wx(dst, dst, x0);
+      break;
+    case T_SHORT:
+      vsetvli(t0, x0, Assembler::e16);
+      vfncvt_x_f_w(dst, src);
+      break;
+    case T_INT:
+      vsetvli(t0, x0, Assembler::e32);
+      vfcvt_x_f_v(dst, src);
+      break;
+    case T_LONG:
+      vsetvli(t0, x0, Assembler::e32);
+      vfwcvt_x_f_v(dst, src);
+      break;
+    case T_DOUBLE:
+      vsetvli(t0, x0, Assembler::e32);
+      vfwcvt_f_f_v(dst, src);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  }else if (src_type == T_DOUBLE) {
+    switch (dst_type) {
+    case T_BYTE:
+      vsetvli(t0, x0, Assembler::e32);
+      vfncvt_x_f_w(dst, src);
+      vsetvli(t0, x0, Assembler::e16);
+      vnsra_wx(dst, dst, x0);
+      vsetvli(t0, x0, Assembler::e8);
+      vnsra_wx(dst, dst, x0);
+      break;
+    case T_SHORT:
+      vsetvli(t0, x0, Assembler::e32);
+      vfncvt_x_f_w(dst, src);
+      vsetvli(t0, x0, Assembler::e16);
+      vnsra_wx(dst, dst, x0);
+      break;
+    case T_INT:
+      vsetvli(t0, x0, Assembler::e32);
+      vfncvt_x_f_w(dst, src);
+      break;
+    case T_LONG:
+      vsetvli(t0, x0, Assembler::e64);
+      vfcvt_x_f_v(dst, src);
+      break;
+    case T_FLOAT:
+      vsetvli(t0, x0, Assembler::e32);
+      vfncvt_f_f_w(dst, src);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  }
+}
+
 bool C2_MacroAssembler::in_scratch_emit_size() {
   if (ciEnv::current()->task() != NULL) {
     PhaseOutput* phase_output = Compile::current()->output();

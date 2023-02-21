@@ -1240,6 +1240,24 @@ enum VectorMask {
   INSN(vfcvt_f_x_v,  0b1010111, 0b001, 0b00011, 0b010010);
   INSN(vfcvt_rtz_xu_f_v, 0b1010111, 0b001, 0b00110, 0b010010);
   INSN(vfcvt_rtz_x_f_v,  0b1010111, 0b001, 0b00111, 0b010010);
+  // Vector Widening Floating-Point/Integer Type-Convert Instructions
+  INSN(vfwcvt_xu_f_v, 0b1010111, 0b001, 0b01000, 0b010010);
+  INSN(vfwcvt_x_f_v,  0b1010111, 0b001, 0b01001, 0b010010);
+  INSN(vfwcvt_f_xu_v, 0b1010111, 0b001, 0b01010, 0b010010);
+  INSN(vfwcvt_f_x_v,  0b1010111, 0b001, 0b01011, 0b010010);
+  INSN(vfwcvt_f_f_v,  0b1010111, 0b001, 0b01100, 0b010010);
+  INSN(vfwcvt_rtz_xu_f_v, 0b1010111, 0b001, 0b01110, 0b010010);
+  INSN(vfwcvt_rtz_x_f_v,  0b1010111, 0b001, 0b01111, 0b010010);
+
+  // Vector Narrowing Floating-Point/Integer Type-Convert Instructions
+  INSN(vfncvt_xu_f_w, 0b1010111, 0b001, 0b10000, 0b010010);
+  INSN(vfncvt_x_f_w,  0b1010111, 0b001, 0b10001, 0b010010);
+  INSN(vfncvt_f_xu_w, 0b1010111, 0b001, 0b10010, 0b010010);
+  INSN(vfncvt_f_x_w,  0b1010111, 0b001, 0b10011, 0b010010);
+  INSN(vfncvt_f_f_w,  0b1010111, 0b001, 0b10100, 0b010010);
+  INSN(vfncvt_rod_f_f_w,  0b1010111, 0b001, 0b10101, 0b010010);
+  INSN(vfncvt_rtz_xu_f_w, 0b1010111, 0b001, 0b10110, 0b010010);
+  INSN(vfncvt_rtz_x_f_w,  0b1010111, 0b001, 0b10111, 0b010010);
 
   // Vector Floating-Point Instruction
   INSN(vfsqrt_v,  0b1010111, 0b001, 0b00000, 0b010011);
@@ -1435,6 +1453,17 @@ enum VectorMask {
   INSN(vsub_vv, 0b1010111, 0b000, 0b000010);
   INSN(vadd_vv, 0b1010111, 0b000, 0b000000);
 
+  // Vector Widening Integer Add/Subtract
+  INSN(vwaddu_vv, 0b1010111, 0b010, 0b110000);
+  INSN(vwadd_vv,  0b1010111, 0b010, 0b110001);
+  INSN(vwsubu_vv, 0b1010111, 0b010, 0b110010);
+  INSN(vwsub_vv,  0b1010111, 0b010, 0b110011);
+
+  INSN(vwaddu_wv, 0b1010111, 0b010, 0b110100);
+  INSN(vwadd_wv,  0b1010111, 0b010, 0b110101);
+  INSN(vwsubu_wv, 0b1010111, 0b010, 0b110110);
+  INSN(vwsub_wv,  0b1010111, 0b010, 0b110111);
+
 #undef INSN
 
 
@@ -1489,6 +1518,17 @@ enum VectorMask {
   INSN(vsub_vx,  0b1010111, 0b100, 0b000010);
   INSN(vadd_vx,  0b1010111, 0b100, 0b000000);
   INSN(vrsub_vx, 0b1010111, 0b100, 0b000011);
+
+  // Vector Widening Integer Add/Subtract
+  INSN(vwaddu_vx, 0b1010111, 0b110, 0b110000);
+  INSN(vwadd_vx,  0b1010111, 0b110, 0b110001);
+  INSN(vwsubu_vx, 0b1010111, 0b110, 0b110010);
+  INSN(vwsub_vx,  0b1010111, 0b110, 0b110011);
+
+  INSN(vwaddu_wx, 0b1010111, 0b110, 0b110100);
+  INSN(vwadd_wx,  0b1010111, 0b110, 0b110101);
+  INSN(vwsubu_wx, 0b1010111, 0b110, 0b110110);
+  INSN(vwsub_wx,  0b1010111, 0b110, 0b110111);
 
 #undef INSN
 

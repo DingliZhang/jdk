@@ -67,18 +67,10 @@ source %{
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
       case Op_VectorBlend:
-      case Op_VectorCast:
-      case Op_VectorCastB2X:
-      case Op_VectorCastD2X:
-      case Op_VectorCastF2X:
-      case Op_VectorCastI2X:
-      case Op_VectorCastL2X:
-      case Op_VectorCastS2X:
       case Op_VectorInsert:
       case Op_VectorLoadShuffle:
       case Op_VectorMaskCmp:
       case Op_VectorRearrange:
-      case Op_VectorReinterpret:
       case Op_VectorStoreMask:
       case Op_VectorTest:
       case Op_PopCountVI:
@@ -1918,6 +1910,80 @@ instruct vsubD(vReg dst, vReg src1, vReg src2) %{
   ins_pipe(pipe_slow);
 %}
 
+// vector cast
+
+instruct vectorBtoX(vReg dst, vReg src, vReg tmp) %{
+  match(Set dst (VectorCastB2X src));
+  ins_cost(VEC_COST);
+  effect(TEMP tmp);
+  format %{ "vectorBtoX $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    __ vector_castX2X(as_VectorRegister($dst$$reg), Matcher::vector_element_basic_type(this), 
+                      as_VectorRegister($src$$reg), T_BYTE);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vectorDtoX(vReg dst, vReg src, vReg tmp) %{
+  match(Set dst (VectorCastD2X src));
+  ins_cost(VEC_COST);
+  effect(TEMP tmp);
+  format %{ "vectorDtoX $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    __ vector_castX2X(as_VectorRegister($dst$$reg), Matcher::vector_element_basic_type(this), 
+                      as_VectorRegister($src$$reg), T_DOUBLE);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vectorFtoX(vReg dst, vReg src, vReg tmp) %{
+  match(Set dst (VectorCastF2X src));
+  ins_cost(VEC_COST);
+  effect(TEMP tmp);
+  format %{ "vectorFtoX $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    __ vector_castX2X(as_VectorRegister($dst$$reg), Matcher::vector_element_basic_type(this), 
+                      as_VectorRegister($src$$reg), T_FLOAT);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vectorItoX(vReg dst, vReg src, vReg tmp) %{
+  match(Set dst (VectorCastI2X src));
+  ins_cost(VEC_COST);
+  effect(TEMP tmp);
+  format %{ "vectorItoX $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    __ vector_castX2X(as_VectorRegister($dst$$reg), Matcher::vector_element_basic_type(this), 
+                      as_VectorRegister($src$$reg), T_INT);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vectorLtoX(vReg dst, vReg src, vReg tmp) %{
+  match(Set dst (VectorCastL2X src));
+  ins_cost(VEC_COST);
+  effect(TEMP tmp);
+  format %{ "vectorLtoX $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    __ vector_castX2X(as_VectorRegister($dst$$reg), Matcher::vector_element_basic_type(this), 
+                      as_VectorRegister($src$$reg), T_LONG);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vectorStoX(vReg dst, vReg src, vReg tmp) %{
+  match(Set dst (VectorCastS2X src));
+  ins_cost(VEC_COST);
+  effect(TEMP tmp);
+  format %{ "vectorStoX $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    __ vector_castX2X(as_VectorRegister($dst$$reg), Matcher::vector_element_basic_type(this), 
+                      as_VectorRegister($src$$reg), T_SHORT);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 instruct vstring_equalsL(iRegP_R11 str1, iRegP_R13 str2, iRegI_R14 cnt,
                          iRegI_R10 result, vReg_V1 v1,
                          vReg_V2 v2, vReg_V3 v3, rFlagsReg cr)
@@ -2192,4 +2258,18 @@ instruct vloadcon(vReg dst, immI0 src) %{
     }
   %}
   ins_pipe(pipe_slow);
+%}
+
+// vector reinterpret
+
+instruct reinterpret(vReg dst) %{
+  predicate(n->as_Vector()->length_in_bytes() ==
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes());  // src == dst
+  match(Set dst (VectorReinterpret dst));
+  ins_cost(0);
+  format %{ "# reinterpret $dst\t# do nothing" %}
+  ins_encode %{
+    // empty
+  %}
+  ins_pipe(pipe_class_empty);
 %}
