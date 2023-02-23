@@ -76,10 +76,8 @@ source %{
       case Op_VectorCastS2X:
       case Op_VectorInsert:
       case Op_VectorLoadShuffle:
-      case Op_VectorMaskCmp:
       case Op_VectorRearrange:
       case Op_VectorReinterpret:
-      case Op_VectorStoreMask:
       case Op_VectorTest:
       case Op_PopCountVI:
       case Op_PopCountVL:
@@ -131,6 +129,59 @@ instruct vloadmask(vReg_V0 v0, vReg src, rFlagsReg cr) %{
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this, $src));
     __ vmsne_vx(v0, as_VectorRegister($src$$reg), x0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vloadmask_masked(vReg_V0 v0, vReg src, vReg_V0 v0_in, rFlagsReg cr) %{
+  match(Set v0 (VectorLoadMask src v0_in));
+  format %{ "vloadmask_masked V0, $src\t# KILL cr" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this, $src));
+    __ vmsne_vx(v0, as_VectorRegister($src$$reg), x0, Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// vector store mask
+
+instruct vstoremask(vReg dst, vReg_V0 v0, immI size) %{
+  match(Set dst (VectorStoreMask v0 size));
+  format %{ "vstoremask $dst, V0" %}
+  ins_encode %{
+    Assembler::SEW sew = __ elembytes_to_sew((int)$size$$constant);
+    __ vsetvli(t0, x0, sew);
+    __ vmv_v_i(as_VectorRegister($dst$$reg), 0);
+    __ vmerge_vim(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), 1);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// vector mask compare
+
+instruct vmaskcmp(vReg_V0 v0, vReg src1, vReg src2, immI cond, rFlagsReg cr) %{
+  match(Set v0 (VectorMaskCmp (Binary src1 src2) cond));
+  effect(KILL cr);
+  format %{ "vmaskcmp_rvv V0, $src1, $src2, $cond\t# KILL cr" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src1);
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $src1);
+    __ rvv_compare(v0, bt, length_in_bytes, as_VectorRegister($src1$$reg),
+                   as_VectorRegister($src2$$reg), (int)($cond$$constant));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmaskcmp_masked(vReg_V0 v0, vReg src1, vReg src2, immI cond, vReg_V0 v0_in, rFlagsReg cr) %{
+  match(Set v0 (VectorMaskCmp (Binary src1 src2) (Binary cond v0_in)));
+  effect(KILL cr);
+  format %{ "vmaskcmp_rvv_masked V0, $src1, $src2, $cond\t# KILL cr" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src1);
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $src1);
+    __ rvv_compare(v0, bt, length_in_bytes, as_VectorRegister($src1$$reg),
+                   as_VectorRegister($src2$$reg), (int)($cond$$constant), Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}

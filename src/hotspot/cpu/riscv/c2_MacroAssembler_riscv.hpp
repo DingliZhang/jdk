@@ -198,4 +198,7 @@
 
  void rvv_vsetvli(BasicType bt, int length_in_bytes, Register tmp = t0);
 
+ void rvv_compare(VectorRegister dst, BasicType bt, int length_in_bytes,
+                  VectorRegister src1, VectorRegister src2, int cond, VectorMask vm = Assembler::unmasked);
+
 #endif // CPU_RISCV_C2_MACROASSEMBLER_RISCV_HPP
