@@ -2421,3 +2421,36 @@ instruct vloadcon(vReg dst, immI0 src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+instruct vmask_gen_imm(vReg_V0 v0, immL con, rFlagsReg cr) %{
+  match(Set v0 (VectorMaskGen con));
+  effect(KILL cr);
+  format %{ "vmask_gen_imm V0, $con\t# KILL cr" %}
+  ins_encode %{
+    __ vsetvli(t0, x0, Assembler::e8);
+    __ vid_v(v0);
+    __ mv(t0, (uint)($con$$constant));
+    __ vmslt_vx(v0, v0, t0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmaskAll_immI(vReg_V0 v0, immI src, rFlagsReg cr) %{
+  match(Set v0 (MaskAll src));
+  effect(KILL cr);
+  format %{ "vmaskAll_immI V0, $src\t# KILL cr" %}
+  ins_encode %{
+    int con = (int)$src$$constant;
+    if (con == 0) {
+      __ vmxor_mm(v0, v0, v0);
+    } else {
+      assert(con == -1, "invalid constant value for mask");
+      BasicType bt = Matcher::vector_element_basic_type(this);
+      __ vsetvli(t0, x0, Assembler::e8);
+      __ vid_v(v0);
+      __ mv(t0, Matcher::vector_length(this));
+      __ vmslt_vx(v0, v0, t0);
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}

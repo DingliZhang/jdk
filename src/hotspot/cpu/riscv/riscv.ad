@@ -1899,6 +1899,7 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_DivVF:
     case Op_DivVD:
     case Op_VectorLoadMask:
+    case Op_VectorMaskCmp:
       return true;
     default:
       return false;
