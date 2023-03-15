@@ -831,8 +831,7 @@ reg_class double_reg(
 );
 
 // Class for RVV vector registers
-// v0, v30, v31 is used as RVV mask registers.
-// v29 is used to move from stack to stack in spill_copy_vector_stack_to_stack.
+// v0, v31 is used as RVV mask registers.
 reg_class vectora_reg(
     V1, V1_H, V1_J, V1_K,
     V2, V2_H, V2_J, V2_K,
@@ -861,7 +860,9 @@ reg_class vectora_reg(
     V25, V25_H, V25_J, V25_K,
     V26, V26_H, V26_J, V26_K,
     V27, V27_H, V27_J, V27_K,
-    V28, V28_H, V28_J, V28_K
+    V28, V28_H, V28_J, V28_K,
+    V29, V29_H, V29_J, V29_K,
+    V30, V30_H, V30_J, V30_K
 );
 
 // Class for 64 bit register f0
@@ -922,10 +923,9 @@ reg_class vectmask_reg_v0 (
 
 // Class for RVV mask registers
 // We need two vmask to do the vector mask logical ops,
-// so define v30 and v31 as mask register too.
+// so define v31 as mask register too.
 reg_class vectmask_reg (
     V0,
-    V30,
     V31
 );
 %}
@@ -1576,11 +1576,11 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
       }
     } else if (bottom_type()->isa_vectmask() && cbuf) {
       C2_MacroAssembler _masm(cbuf);
-      int vector_reg_size_in_bytes = Matcher::scalable_vector_reg_size(T_BYTE);
+      int vmask_size_in_bytes = Matcher::scalable_predicate_reg_slots() * 32 / 8;
       if (src_lo_rc == rc_stack && dst_lo_rc == rc_stack) {
         // stack to stack
         __ spill_copy_vmask_stack_to_stack(src_offset, dst_offset,
-                                           vector_reg_size_in_bytes);
+                                           vmask_size_in_bytes);
       } else if (src_lo_rc == rc_vector && dst_lo_rc == rc_stack) {
         // vmask to stack
         __ spill_vmask(as_VectorRegister(Matcher::_regEncode[src_lo]), ra_->reg2offset(dst_lo));

@@ -149,7 +149,7 @@ instruct vstoremask(vReg dst, vRegMask_V0 src, immI size) %{
   format %{ "vstoremask $dst, $src" %}
   ins_encode %{
     __ vsetvli(t0, x0, Assembler::e8);
-    __ vmv_v_i(as_VectorRegister($dst$$reg), 0);
+    __ vmv_v_x(as_VectorRegister($dst$$reg), x0);
     __ vmerge_vim(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), 1);
   %}
   ins_pipe(pipe_slow);
@@ -169,7 +169,7 @@ instruct vmaskcmp(vRegMask dst, vReg src1, vReg src2, immI cond) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vmaskcmp_masked(vRegMask dst, vReg src1, vReg src2, immI cond, vRegMask_V0 vmask, vRegMask tmp) %{
+instruct vmaskcmp_masked(vRegMask dst, vReg src1, vReg src2, immI cond, vRegMask_V0 vmask, vReg tmp) %{
   match(Set dst (VectorMaskCmp (Binary src1 src2) (Binary cond vmask)));
   effect(TEMP tmp);
   format %{ "vmaskcmp_rvv_masked $dst, $src1, $src2, $vmask, $tmp, $cond" %}
