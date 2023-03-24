@@ -271,7 +271,7 @@ class MacroAssembler: public Assembler {
   // accesses, and these can exceed the offset range.
   Address legitimize_address(Register Rd, const Address &adr) {
     if (adr.getMode() == Address::base_plus_offset) {
-      if (!is_offset_in_range(adr.offset(), 12)) {
+      if (!is_simm(adr.offset(), 12)) {
         return form_address(Rd, adr.base(), adr.offset());
       }
     }
@@ -592,7 +592,7 @@ class MacroAssembler: public Assembler {
   void NAME(Register Rs1, Register Rs2, const address dest) {                                            \
     assert_cond(dest != NULL);                                                                           \
     int64_t offset = dest - pc();                                                                        \
-    guarantee(is_imm_in_range(offset, 12, 1), "offset is invalid.");                                     \
+    guarantee(is_simm(offset, 13) && ((offset & 0x1) == 0), "offset is invalid.");                       \
     Assembler::NAME(Rs1, Rs2, offset);                                                                   \
   }                                                                                                      \
   INSN_ENTRY_RELOC(void, NAME(Register Rs1, Register Rs2, address dest, relocInfo::relocType rtype))     \
@@ -782,7 +782,7 @@ public:
   void NAME(Register Rd, address dest) {                                                           \
     assert_cond(dest != NULL);                                                                     \
     int64_t distance = dest - pc();                                                                \
-    if (is_offset_in_range(distance, 32)) {                                                        \
+    if (is_simm32(distance)) {                                                                     \
       auipc(Rd, (int32_t)distance + 0x800);                                                        \
       Assembler::NAME(Rd, Rd, ((int32_t)distance << 20) >> 20);                                    \
     } else {                                                                                       \
@@ -803,7 +803,7 @@ public:
         break;                                                                                     \
       }                                                                                            \
       case Address::base_plus_offset: {                                                            \
-        if (is_offset_in_range(adr.offset(), 12)) {                                                \
+        if (is_simm(adr.offset(), 12)) {                                                           \
           Assembler::NAME(Rd, adr.base(), adr.offset());                                           \
         } else {                                                                                   \
           int32_t offset = ((int32_t)adr.offset() << 20) >> 20;                                    \
@@ -839,7 +839,7 @@ public:
   void NAME(FloatRegister Rd, address dest, Register temp = t0) {                                  \
     assert_cond(dest != NULL);                                                                     \
     int64_t distance = dest - pc();                                                                \
-    if (is_offset_in_range(distance, 32)) {                                                        \
+    if (is_simm32(distance)) {                                                                     \
       auipc(temp, (int32_t)distance + 0x800);                                                      \
       Assembler::NAME(Rd, temp, ((int32_t)distance << 20) >> 20);                                  \
     } else {                                                                                       \
@@ -861,7 +861,7 @@ public:
         break;                                                                                     \
       }                                                                                            \
       case Address::base_plus_offset: {                                                            \
-        if (is_offset_in_range(adr.offset(), 12)) {                                                \
+        if (is_simm(adr.offset(), 12)) {                                                           \
           Assembler::NAME(Rd, adr.base(), adr.offset());                                           \
         } else {                                                                                   \
           int32_t offset = ((int32_t)adr.offset() << 20) >> 20;                                    \
@@ -900,7 +900,7 @@ public:
     assert_cond(dest != NULL);                                                                     \
     assert_different_registers(Rs, temp);                                                          \
     int64_t distance = dest - pc();                                                                \
-    if (is_offset_in_range(distance, 32)) {                                                        \
+    if (is_simm32(distance)) {                                                                     \
       auipc(temp, (int32_t)distance + 0x800);                                                      \
       Assembler::NAME(Rs, temp, ((int32_t)distance << 20) >> 20);                                  \
     } else {                                                                                       \
@@ -919,7 +919,7 @@ public:
         break;                                                                                     \
       }                                                                                            \
       case Address::base_plus_offset: {                                                            \
-        if (is_offset_in_range(adr.offset(), 12)) {                                                \
+        if (is_simm(adr.offset(), 12)) {                                                           \
           Assembler::NAME(Rs, adr.base(), adr.offset());                                           \
         } else {                                                                                   \
           assert_different_registers(Rs, temp);                                                    \
@@ -945,7 +945,7 @@ public:
   void NAME(FloatRegister Rs, address dest, Register temp = t0) {                                  \
     assert_cond(dest != NULL);                                                                     \
     int64_t distance = dest - pc();                                                                \
-    if (is_offset_in_range(distance, 32)) {                                                        \
+    if (is_simm32(distance)) {                                                                     \
       auipc(temp, (int32_t)distance + 0x800);                                                      \
       Assembler::NAME(Rs, temp, ((int32_t)distance << 20) >> 20);                                  \
     } else {                                                                                       \
@@ -963,7 +963,7 @@ public:
         break;                                                                                     \
       }                                                                                            \
       case Address::base_plus_offset: {                                                            \
-        if (is_offset_in_range(adr.offset(), 12)) {                                                \
+        if (is_simm(adr.offset(), 12)) {                                                           \
           Assembler::NAME(Rs, adr.base(), adr.offset());                                           \
         } else {                                                                                   \
           int32_t offset = ((int32_t)adr.offset() << 20) >> 20;                                    \
