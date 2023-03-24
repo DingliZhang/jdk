@@ -549,7 +549,7 @@ public:
 
 #define INSN(NAME, op, funct3)                                                                           \
   void NAME(Register Rs1, Register Rs2, const int64_t offset) {                                          \
-    guarantee(is_simm(offset, 12) && ((offset & 0x1) == 0), "offset is invalid.");                       \
+    guarantee(is_simm(offset, 13) && ((offset & 0x1) == 0), "offset is invalid.");                       \
     unsigned insn = 0;                                                                                   \
     uint32_t val  = offset & 0x1fff;                                                                     \
     uint32_t val11 = (val >> 11) & 0x1;                                                                  \
@@ -641,7 +641,7 @@ public:
 
 #define INSN(NAME, op)                                                                \
   void NAME(Register Rd, const int32_t offset) {                                      \
-    guarantee(is_simm(offset, 20) && ((offset & 0x1) == 0), "offset is invalid.");    \
+    guarantee(is_simm(offset, 21) && ((offset & 0x1) == 0), "offset is invalid.");    \
     unsigned insn = 0;                                                                \
     patch((address)&insn, 6, 0, op);                                                  \
     patch_reg((address)&insn, 7, Rd);                                                 \
@@ -2156,7 +2156,7 @@ public:
 
 #define INSN(NAME, funct3, op)                                                               \
   void NAME(int32_t offset) {                                                                \
-    assert_cond(is_simm(offset, 11) && ((offset & 0x1) == 0));                               \
+    assert_cond(is_simm(offset, 12) && ((offset & 0x1) == 0));                               \
     uint16_t insn = 0;                                                                       \
     c_patch((address)&insn, 1, 0, op);                                                       \
     c_patch((address)&insn, 2, 2, (offset & nth_bit(5)) >> 5);                               \
@@ -2173,7 +2173,7 @@ public:
   void NAME(address dest) {                                                                  \
     assert_cond(dest != NULL);                                                               \
     int64_t distance = dest - pc();                                                          \
-    assert_cond(is_simm(distance, 11) && ((distance & 0x1) == 0));                           \
+    assert_cond(is_simm(distance, 12) && ((distance & 0x1) == 0));                           \
     c_j(distance);                                                                           \
   }                                                                                          \
   void NAME(Label &L) {                                                                      \
@@ -2186,7 +2186,7 @@ public:
 
 #define INSN(NAME, funct3, op)                                                               \
   void NAME(Register Rs1, int32_t imm) {                                                     \
-    assert_cond(is_simm(imm, 8) && ((imm & 0x1) == 0));                                      \
+    assert_cond(is_simm(imm, 9) && ((imm & 0x1) == 0));                                      \
     uint16_t insn = 0;                                                                       \
     c_patch((address)&insn, 1, 0, op);                                                       \
     c_patch((address)&insn, 2, 2, (imm & nth_bit(5)) >> 5);                                  \
@@ -2201,7 +2201,7 @@ public:
   void NAME(Register Rs1, address dest) {                                                    \
     assert_cond(dest != NULL);                                                               \
     int64_t distance = dest - pc();                                                          \
-    assert_cond(is_simm(distance, 8) && ((offset & 0x1) == 0));                              \
+    assert_cond(is_simm(distance, 9) && ((offset & 0x1) == 0));                              \
     NAME(Rs1, distance);                                                                     \
   }                                                                                          \
   void NAME(Register Rs1, Label &L) {                                                        \
