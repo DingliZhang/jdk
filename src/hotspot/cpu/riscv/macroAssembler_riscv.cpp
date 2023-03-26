@@ -1564,8 +1564,7 @@ void MacroAssembler::movptr(Register Rd, address addr, int32_t &offset) {
     block_comment(buffer);
   }
 #endif
-  assert(((imm64 >= 0) && is_uimm(imm64, 47)) || (imm64 == (int64_t)-1),
-         "bit 47 overflows in address constant");
+  assert((uint64_t)imm64 < (1ull << 48), "48-bit overflow in address constant");
   // Load upper 31 bits
   int64_t imm = imm64 >> 17;
   int64_t upper = imm, lower = imm;
