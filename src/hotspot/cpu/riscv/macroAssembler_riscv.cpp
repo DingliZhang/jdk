@@ -835,7 +835,7 @@ void MacroAssembler::li(Register Rd, int64_t imm) {
   void MacroAssembler::NAME(const address dest, Register temp) {   \
     assert_cond(dest != NULL);                                     \
     int64_t distance = dest - pc();                                \
-    if (is_simm(distance, 21) && ((distance & 0x1) == 0)) {        \
+    if (is_simm(distance, 21) && ((distance % 2) == 0)) {        \
       Assembler::jal(REGISTER, distance);                          \
     } else {                                                       \
       assert(temp != noreg, "expecting a register");               \
@@ -879,7 +879,7 @@ void MacroAssembler::li(Register Rd, int64_t imm) {
   void MacroAssembler::NAME(Register Rd, const address dest, Register temp) {         \
     assert_cond(dest != NULL);                                                        \
     int64_t distance = dest - pc();                                                   \
-    if (is_simm(distance, 21) && ((distance & 0x1) == 0)) {                           \
+    if (is_simm(distance, 21) && ((distance % 2) == 0)) {                           \
       Assembler::NAME(Rd, distance);                                                  \
     } else {                                                                          \
       assert_different_registers(Rd, temp);                                           \
@@ -1345,7 +1345,7 @@ void MacroAssembler::pop_CPU_state(bool restore_vectors, int vector_size_in_byte
 }
 
 static int patch_offset_in_jal(address branch, int64_t offset) {
-  assert(is_simm(offset, 21) && ((offset & 0x1) == 0),
+  assert(is_simm(offset, 21) && ((offset % 2) == 0),
          "offset is too large to be patched in one jal instruction!\n");
   Assembler::patch(branch, 31, 31, (offset >> 20) & 0x1);                       // offset[20]    ==> branch[31]
   Assembler::patch(branch, 30, 21, (offset >> 1)  & 0x3ff);                     // offset[10:1]  ==> branch[30:21]
@@ -1355,7 +1355,7 @@ static int patch_offset_in_jal(address branch, int64_t offset) {
 }
 
 static int patch_offset_in_conditional_branch(address branch, int64_t offset) {
-  assert(is_simm(offset, 13) && ((offset & 0x1) == 0),
+  assert(is_simm(offset, 13) && ((offset % 2) == 0),
          "offset is too large to be patched in one beq/bge/bgeu/blt/bltu/bne instruction!\n");
   Assembler::patch(branch, 31, 31, (offset >> 12) & 0x1);                       // offset[12]    ==> branch[31]
   Assembler::patch(branch, 30, 25, (offset >> 5)  & 0x3f);                      // offset[10:5]  ==> branch[30:25]
