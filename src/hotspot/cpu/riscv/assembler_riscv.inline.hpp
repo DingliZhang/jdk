@@ -31,4 +31,11 @@
 #include "asm/codeBuffer.hpp"
 #include "code/codeCache.hpp"
 
+inline bool Assembler::is_simm6(int64_t x) { return Assembler::is_simm(x, 6); }
+inline bool Assembler::is_simm12(int64_t x) { return Assembler::is_simm(x, 12); }
+inline bool Assembler::is_simm21(int64_t x) { return Assembler::is_simm(x, 21); }
+
+inline bool Assembler::is_uimm5(uint64_t x) { return Assembler::is_uimm(x, 5); }
+inline bool Assembler::is_uimm9(uint64_t x) { return Assembler::is_uimm(x, 9); }
+
 #endif // CPU_RISCV_ASSEMBLER_RISCV_INLINE_HPP

@@ -266,7 +266,7 @@ class NativeCall: public NativeInstruction {
     assert(is_jal(), "Should be jal instruction!");
     intptr_t offset = (intptr_t)(dest - instruction_address());
     assert((offset & 0x1) == 0, "bad alignment");
-    assert(Assembler::is_simm(offset, 21), "encoding constraint");
+    assert(Assembler::is_simm21(offset), "encoding constraint");
     unsigned int insn = 0b1101111; // jal
     address pInsn = (address)(&insn);
     Assembler::patch(pInsn, 31, 31, (offset >> 20) & 0x1);
