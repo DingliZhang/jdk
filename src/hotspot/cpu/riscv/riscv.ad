@@ -1933,6 +1933,7 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_AndVMask:
     case Op_XorVMask:
     case Op_OrVMask:
+    case Op_MaskAll:
       return true;
     default:
       return false;

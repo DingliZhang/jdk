@@ -2465,28 +2465,39 @@ instruct vmaskAll_immI(vRegMask dst, immI src) %{
   ins_encode %{
     int con = (int)$src$$constant;
     if (con == 0) {
-      __ vsetvli(t0, x0, Assembler::e8);
-      __ vmxor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
+      __ rvv_clear_register(as_VectorRegister($dst$$reg));
     } else {
       assert(con == -1, "invalid constant value for mask");
-      __ vsetvli(t0, x0, Assembler::e8);
-      __ vid_v(as_VectorRegister($dst$$reg));
-      __ mv(t0, Matcher::vector_length(this));
-      __ vmslt_vx(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), t0);
+      BasicType bt = Matcher::vector_element_basic_type(this);
+      __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+      __ vmxnor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     }
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct vmaskAllI(vRegMask dst, iRegI src, vReg tmp) %{
+instruct vmaskAllI(vRegMask dst, iRegI src) %{
   match(Set dst (MaskAll src));
-  effect(TEMP tmp);
-  format %{ "vmaskAllI $dst, $src\t# KILL $tmp" %}
+  format %{ "vmaskAllI $dst, $src" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($src$$reg));
+    __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), x0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmaskAllI_masked(vRegMask dst, iRegI src, vRegMask_V0 vmask, vReg tmp) %{
+  match(Set dst (MaskAll src vmask));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vmaskAllI_masked $dst, $src, $vmask\t# KILL $tmp" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
     __ vmv_v_x(as_VectorRegister($tmp$$reg), as_Register($src$$reg));
-    __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg), x0);
+    __ vmxor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
+    __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg), x0, Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}
@@ -2497,28 +2508,39 @@ instruct vmaskAll_immL(vRegMask dst, immL src) %{
   ins_encode %{
     long con = (long)$src$$constant;
     if (con == 0) {
-      __ vsetvli(t0, x0, Assembler::e8);
-      __ vmxor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
+      __ rvv_clear_register(as_VectorRegister($dst$$reg));
     } else {
       assert(con == -1, "invalid constant value for mask");
-      __ vsetvli(t0, x0, Assembler::e8);
-      __ vid_v(as_VectorRegister($dst$$reg));
-      __ mv(t0, Matcher::vector_length(this));
-      __ vmslt_vx(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), t0);
+      BasicType bt = Matcher::vector_element_basic_type(this);
+      __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+      __ vmxnor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     }
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct vmaskAllL(vRegMask dst, iRegL src, vReg tmp) %{
+instruct vmaskAllL(vRegMask dst, iRegL src) %{
   match(Set dst (MaskAll src));
-  effect(TEMP tmp);
-  format %{ "vmaskAllL $dst, $src\t# KILL $tmp" %}
+  format %{ "vmaskAllL $dst, $src" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($src$$reg));
+    __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), x0);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmaskAllL_masked(vRegMask dst, iRegL src, vRegMask_V0 vmask, vReg tmp) %{
+  match(Set dst (MaskAll src vmask));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vmaskAllL_masked $dst, $src, $vmask\t# KILL $tmp" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
     __ vmv_v_x(as_VectorRegister($tmp$$reg), as_Register($src$$reg));
-    __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg), x0);
+    __ vmxor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
+    __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg), x0, Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}
