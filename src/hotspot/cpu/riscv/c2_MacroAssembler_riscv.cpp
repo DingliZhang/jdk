@@ -1827,3 +1827,35 @@ void C2_MacroAssembler::rvv_vector_integer_narrow(VectorRegister dst, BasicType 
   }
   vmv1r_v(dst, tmp);
 }
+
+// Extract a scalar element from an rvv vector at position 'idx'.
+// The input elements in src are expected to be of integral type.
+void C2_MacroAssembler::rvv_extract_integral(Register dst, BasicType bt, VectorRegister src, int idx) {
+  assert(is_integral_type(bt), "unsupported element type");
+  assert(idx >= 0, "idx cannot be negative");
+  Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+  vsetvli(t0, x0, sew);
+  if (idx > 31) {
+    mv(t0, idx);
+    vslidedown_vx(src, src, t0);
+  } else if (idx <= 31 && idx != 0) {
+    vslidedown_vi(src, src, idx);
+  }
+  vmv_x_s(dst, src);
+}
+
+// Extract a scalar element from an rvv vector at position 'idx'.
+// The input elements in src are expected to be of floating point type.
+void C2_MacroAssembler::rvv_extract_FD(FloatRegister dst, BasicType bt, VectorRegister src, int idx) {
+  assert(is_floating_point_type(bt), "unsupported element type");
+  assert(idx >= 0, "idx cannot be negative");
+  Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+  vsetvli(t0, x0, sew);
+  if (idx > 31) {
+    mv(t0, idx);
+    vslidedown_vx(src, src, t0);
+  } else if (idx <= 31 && idx != 0) {
+    vslidedown_vi(src, src, idx);
+  }
+  vfmv_f_s(dst, src);
+}

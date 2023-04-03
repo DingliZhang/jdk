@@ -238,4 +238,7 @@
     vxor_vv(v, v, v);
   }
 
+  void rvv_extract_integral(Register dst, BasicType bt, VectorRegister src, int idx);
+  void rvv_extract_FD(FloatRegister dst, BasicType bt, VectorRegister src, int idx);
+
 #endif // CPU_RISCV_C2_MACROASSEMBLER_RISCV_HPP

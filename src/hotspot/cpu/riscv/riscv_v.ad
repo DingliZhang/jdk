@@ -54,14 +54,7 @@ source %{
       case Op_MulReductionVI:
       case Op_MulReductionVL:
       // Others
-      case Op_Extract:
-      case Op_ExtractB:
       case Op_ExtractC:
-      case Op_ExtractD:
-      case Op_ExtractF:
-      case Op_ExtractI:
-      case Op_ExtractL:
-      case Op_ExtractS:
       case Op_ExtractUB:
       // Vector API specific
       case Op_LoadVectorGather:
@@ -2848,6 +2841,68 @@ instruct reinterpretResize(vReg dst, vReg src) %{
            "invalid vector length");
     __ rvv_vsetvli(T_BYTE, length_in_bytes_resize);
     __ vmv_v_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector extract ---------------------------------
+
+instruct extractB(iRegINoSp dst, vReg src, immI idx)
+%{
+  match(Set dst (ExtractB src idx));
+  format %{ "rvv_extract_integral $dst, $src, $idx\t# extract from vector(B)" %}
+  ins_encode %{
+    __ rvv_extract_integral(as_Register($dst$$reg), T_BYTE, as_VectorRegister($src$$reg), (int)($idx$$constant));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractS(iRegINoSp dst, vReg src, immI idx)
+%{
+  match(Set dst (ExtractS src idx));
+  format %{ "rvv_extract_integral $dst, $src, $idx\t# extract from vector(S)" %}
+  ins_encode %{
+    __ rvv_extract_integral(as_Register($dst$$reg), T_SHORT, as_VectorRegister($src$$reg), (int)($idx$$constant));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractI(iRegINoSp dst, vReg src, immI idx)
+%{
+  match(Set dst (ExtractI src idx));
+  format %{ "rvv_extract_integral $dst, $src, $idx\t# extract from vector(I)" %}
+  ins_encode %{
+    __ rvv_extract_integral(as_Register($dst$$reg), T_INT, as_VectorRegister($src$$reg), (int)($idx$$constant));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractL(iRegINoSp dst, vReg src, immI idx)
+%{
+  match(Set dst (ExtractL src idx));
+  format %{ "rvv_extract_integral $dst, $src, $idx\t# extract from vector(F)" %}
+  ins_encode %{
+    __ rvv_extract_integral(as_Register($dst$$reg), T_LONG, as_VectorRegister($src$$reg), (int)($idx$$constant));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractF(fRegF dst, vReg src, immI idx)
+%{
+  match(Set dst (ExtractF src idx));
+  format %{ "rvv_extract_FD $dst, $src, $idx\t# extract from vector(D)" %}
+  ins_encode %{
+    __ rvv_extract_FD($dst$$FloatRegister, T_FLOAT, as_VectorRegister($src$$reg), (int)($idx$$constant));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractD(fRegD dst, vReg src, immI idx)
+%{
+  match(Set dst (ExtractD src idx));
+  format %{ "rvv_extract_FD $dst, $src, $idx\t# extract from vector(D)" %}
+  ins_encode %{
+    __ rvv_extract_FD($dst$$FloatRegister, T_DOUBLE, as_VectorRegister($src$$reg), (int)($idx$$constant));
   %}
   ins_pipe(pipe_slow);
 %}
