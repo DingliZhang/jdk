@@ -1262,7 +1262,7 @@ public:
     vmnand_mm(vd, vs, vs);
   }
 
-  inline void vncvt_x_x_w(VectorRegister vd, VectorRegister vs, VectorMask vm) {
+  inline void vncvt_x_x_w(VectorRegister vd, VectorRegister vs, VectorMask vm = unmasked) {
     vnsrl_wx(vd, vs, x0, vm);
   }
 
