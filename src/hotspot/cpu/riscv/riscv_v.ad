@@ -414,7 +414,7 @@ instruct vand(vReg dst, vReg src1, vReg src2) %{
   ins_cost(VEC_COST);
   format %{ "vand.vv  $dst, $src1, $src2\t#@vand" %}
   ins_encode %{
-    __ rvv_vsetvli(T_LONG, Matcher::vector_length_in_bytes(this));
+    __ rvv_vsetvli(T_BYTE, Matcher::vector_length_in_bytes(this));
     __ vand_vv(as_VectorRegister($dst$$reg),
                as_VectorRegister($src1$$reg),
                as_VectorRegister($src2$$reg));
@@ -429,7 +429,7 @@ instruct vor(vReg dst, vReg src1, vReg src2) %{
   ins_cost(VEC_COST);
   format %{ "vor.vv  $dst, $src1, $src2\t#@vor" %}
   ins_encode %{
-    __ rvv_vsetvli(T_LONG, Matcher::vector_length_in_bytes(this));
+    __ rvv_vsetvli(T_BYTE, Matcher::vector_length_in_bytes(this));
     __ vor_vv(as_VectorRegister($dst$$reg),
               as_VectorRegister($src1$$reg),
               as_VectorRegister($src2$$reg));
@@ -444,7 +444,7 @@ instruct vxor(vReg dst, vReg src1, vReg src2) %{
   ins_cost(VEC_COST);
   format %{ "vxor.vv  $dst, $src1, $src2\t#@vxor" %}
   ins_encode %{
-    __ rvv_vsetvli(T_LONG, Matcher::vector_length_in_bytes(this));
+    __ rvv_vsetvli(T_BYTE, Matcher::vector_length_in_bytes(this));
     __ vxor_vv(as_VectorRegister($dst$$reg),
                as_VectorRegister($src1$$reg),
                as_VectorRegister($src2$$reg));
@@ -1906,50 +1906,25 @@ instruct vlslL_imm(vReg dst, vReg src, immI shift) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vshiftcntB(vReg dst, iRegIorL2I cnt) %{
-  predicate(Matcher::vector_element_basic_type(n) == T_BYTE);
-  match(Set dst (LShiftCntV cnt));
-  match(Set dst (RShiftCntV cnt));
-  format %{ "vmv.v.x $dst, $cnt\t#@vshiftcntB" %}
-  ins_encode %{
-    __ rvv_vsetvli(T_BYTE, Matcher::vector_length_in_bytes(this));
-    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($cnt$$reg));
-  %}
-  ins_pipe(pipe_slow);
-%}
-
-instruct vshiftcntS(vReg dst, iRegIorL2I cnt) %{
-  predicate(Matcher::vector_element_basic_type(n) == T_SHORT ||
-            Matcher::vector_element_basic_type(n) == T_CHAR);
-  match(Set dst (LShiftCntV cnt));
-  match(Set dst (RShiftCntV cnt));
-  format %{ "vmv.v.x $dst, $cnt\t#@vshiftcntS" %}
-  ins_encode %{
-    __ rvv_vsetvli(T_SHORT, Matcher::vector_length_in_bytes(this));
-    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($cnt$$reg));
-  %}
-  ins_pipe(pipe_slow);
-%}
-
-instruct vshiftcntI(vReg dst, iRegIorL2I cnt) %{
-  predicate(Matcher::vector_element_basic_type(n) == T_INT);
-  match(Set dst (LShiftCntV cnt));
-  match(Set dst (RShiftCntV cnt));
-  format %{ "vmv.v.x $dst, $cnt\t#@vshiftcntI" %}
-  ins_encode %{
-    __ rvv_vsetvli(T_INT, Matcher::vector_length_in_bytes(this));
-    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($cnt$$reg));
-  %}
-  ins_pipe(pipe_slow);
-%}
+// vector shift count
 
 instruct vshiftcntL(vReg dst, iRegIorL2I cnt) %{
-  predicate(Matcher::vector_element_basic_type(n) == T_LONG);
   match(Set dst (LShiftCntV cnt));
-  match(Set dst (RShiftCntV cnt));
-  format %{ "vmv.v.x $dst, $cnt\t#@vshiftcntL" %}
+  format %{ "vshiftcntL $dst, $cnt" %}
   ins_encode %{
-    __ rvv_vsetvli(T_LONG, Matcher::vector_length_in_bytes(this));
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($cnt$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vshiftcntR(vReg dst, iRegIorL2I cnt) %{
+  match(Set dst (RShiftCntV cnt));
+  format %{ "vshiftcntR $dst, $cnt" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
     __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($cnt$$reg));
   %}
   ins_pipe(pipe_slow);
@@ -2599,7 +2574,7 @@ instruct vcvtBtoX(vReg dst, vReg src) %{
     if (is_floating_point_type(bt)) {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt == T_FLOAT ? T_INT : T_LONG,
                                    as_VectorRegister($src$$reg), T_BYTE);
-      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     } else {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt,
                                    as_VectorRegister($src$$reg), T_BYTE);
@@ -2632,7 +2607,7 @@ instruct vcvtStoX_extend(vReg dst, vReg src) %{
     if (is_floating_point_type(bt)) {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt == T_FLOAT ? T_INT : T_LONG,
                                    as_VectorRegister($src$$reg), T_SHORT);
-      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     } else {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt,
                                    as_VectorRegister($src$$reg), T_SHORT);
@@ -2671,7 +2646,7 @@ instruct vcvtItoX(vReg dst, vReg src) %{
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), T_LONG,
                                    as_VectorRegister($src$$reg), T_INT);
       if (bt == T_DOUBLE) {
-        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
       }
     }
   %}
@@ -2703,7 +2678,7 @@ instruct vcvtLtoF(vReg dst, vReg src, vReg tmp) %{
   ins_encode %{
     __ rvv_vector_integer_narrow(as_VectorRegister($dst$$reg), T_INT,
                                  as_VectorRegister($src$$reg), T_LONG, as_VectorRegister($tmp$$reg));
-    __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+    __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
