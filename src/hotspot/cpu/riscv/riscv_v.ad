@@ -2582,7 +2582,7 @@ instruct vcvtBtoX(vReg dst, vReg src) %{
     if (is_floating_point_type(bt)) {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt == T_FLOAT ? T_INT : T_LONG,
                                    as_VectorRegister($src$$reg), T_BYTE);
-      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     } else {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt,
                                    as_VectorRegister($src$$reg), T_BYTE);
@@ -2615,7 +2615,7 @@ instruct vcvtStoX_extend(vReg dst, vReg src) %{
     if (is_floating_point_type(bt)) {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt == T_FLOAT ? T_INT : T_LONG,
                                    as_VectorRegister($src$$reg), T_SHORT);
-      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+      __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     } else {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt,
                                    as_VectorRegister($src$$reg), T_SHORT);
@@ -2654,7 +2654,7 @@ instruct vcvtItoX(vReg dst, vReg src) %{
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), T_LONG,
                                    as_VectorRegister($src$$reg), T_INT);
       if (bt == T_DOUBLE) {
-        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
       }
     }
   %}
@@ -2686,7 +2686,7 @@ instruct vcvtLtoF(vReg dst, vReg src, vReg tmp) %{
   ins_encode %{
     __ rvv_vector_integer_narrow(as_VectorRegister($dst$$reg), T_INT,
                                  as_VectorRegister($src$$reg), T_LONG, as_VectorRegister($tmp$$reg));
-    __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+    __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
