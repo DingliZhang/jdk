@@ -1793,37 +1793,39 @@ void C2_MacroAssembler::rvv_vector_integer_extend(VectorRegister dst, BasicType 
 
 // Vector narrow from src to dst with specified element sizes.
 // High part of dst vector will be filled with zero.
-void C2_MacroAssembler::rvv_vector_integer_narrow(VectorRegister dst, BasicType dst_bt,
+void C2_MacroAssembler::rvv_vector_integer_narrow(VectorRegister dst, BasicType dst_bt, int length_in_bytes,
                                                   VectorRegister src, BasicType src_bt, VectorRegister tmp) {
-  assert(type2aelembytes(dst_bt) > type2aelembytes(src_bt) && type2aelembytes(dst_bt) <= 4 && type2aelembytes(src_bt) <= 8, "invalid element size");
+  assert(type2aelembytes(dst_bt) < type2aelembytes(src_bt) && type2aelembytes(dst_bt) <= 4 && type2aelembytes(src_bt) <= 8, "invalid element size");
   assert(dst_bt != T_FLOAT && dst_bt != T_DOUBLE && src_bt != T_FLOAT && src_bt != T_DOUBLE, "should be integer element");
   assert_different_registers(dst, tmp);
-  rvv_clear_register(tmp);
+  vmv1r_v(tmp, src);
+  rvv_clear_register(dst);
+  mv(t0, length_in_bytes);
   if (src_bt == T_LONG) {
     // https://github.com/riscv/riscv-v-spec/blob/master/v-spec.adoc#117-vector-narrowing-integer-right-shift-instructions
     // Future extensions might add support for versions that narrow to a destination that is 1/4 the width of the source.
     // So we can currently only scale down by 1/2 the width at a time.
-    vsetvli(t0, x0, Assembler::e32, Assembler::mf2);
-    vncvt_x_x_w(tmp, src);
+    vsetvli(t0, t0, Assembler::e32, Assembler::mf2);
+    vncvt_x_x_w(tmp, tmp);
     if (dst_bt == T_SHORT || dst_bt == T_BYTE) {
-      vsetvli(t0, x0, Assembler::e16, Assembler::mf2);
-      vncvt_x_x_w(tmp, src);
+      vsetvli(t0, t0, Assembler::e16, Assembler::mf2);
+      vncvt_x_x_w(tmp, tmp);
       if (dst_bt == T_BYTE) {
-        vsetvli(t0, x0, Assembler::e8, Assembler::mf2);
-        vncvt_x_x_w(tmp, src);
+        vsetvli(t0, t0, Assembler::e8, Assembler::mf2);
+        vncvt_x_x_w(tmp, tmp);
       }
     }
   } else if (src_bt == T_INT) {
       // T_SHORT
-      vsetvli(t0, x0, Assembler::e16, Assembler::mf2);
-      vncvt_x_x_w(tmp, src);
+      vsetvli(t0, t0, Assembler::e16, Assembler::mf2);
+      vncvt_x_x_w(tmp, tmp);
       if (dst_bt == T_BYTE) {
-        vsetvli(t0, x0, Assembler::e8, Assembler::mf2);
-        vncvt_x_x_w(tmp, src);
+        vsetvli(t0, t0, Assembler::e8, Assembler::mf2);
+        vncvt_x_x_w(tmp, tmp);
       }
   } else if (src_bt == T_SHORT) {
-    vsetvli(t0, x0, Assembler::e8, Assembler::mf2);
-    vncvt_x_x_w(tmp, src);
+    vsetvli(t0, t0, Assembler::e8, Assembler::mf2);
+    vncvt_x_x_w(tmp, tmp);
   }
-  vmv1r_v(dst, tmp);
+  vmv_v_v(dst, tmp);
 }
