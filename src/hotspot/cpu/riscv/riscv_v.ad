@@ -42,6 +42,9 @@ source %{
     if (is_store) {
       masm.vsex_v(reg, base, sew, vm);
     } else {
+      if(vm == Assembler::v0_t){
+        masm.vxor_vv(reg, reg, reg);
+      }
       masm.vlex_v(reg, base, sew, vm);
     }
   }
