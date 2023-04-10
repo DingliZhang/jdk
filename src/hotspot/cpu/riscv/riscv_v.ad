@@ -35,14 +35,14 @@ source_hpp %{
 source %{
 
   static void loadStore(C2_MacroAssembler masm, bool is_store,
-                        VectorRegister reg, BasicType bt, Register base, int length_in_bytes) {
+                        VectorRegister reg, BasicType bt, Register base, int length_in_bytes, Assembler::VectorMask vm = Assembler::unmasked) {
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     masm.rvv_vsetvli(bt, length_in_bytes);
 
     if (is_store) {
-      masm.vsex_v(reg, base, sew);
+      masm.vsex_v(reg, base, sew, vm);
     } else {
-      masm.vlex_v(reg, base, sew);
+      masm.vlex_v(reg, base, sew, vm);
     }
   }
 
@@ -2565,4 +2565,28 @@ instruct vmaskcast_same_esize_rvv(vRegMask dst_src) %{
   format %{ "vmaskcast_same_esize_rvv $dst_src\t# do nothing" %}
   ins_encode(/* empty encoding */);
   ins_pipe(pipe_class_empty);
+%}
+
+// vector load/store - predicated
+
+instruct loadV_masked(vReg dst, vmemA mem, vRegMask_V0 vmask) %{
+  match(Set dst (LoadVectorMasked mem vmask));
+  format %{ "loadV_masked $dst, $vmask, $mem" %}
+  ins_encode %{
+    VectorRegister dst_reg = as_VectorRegister($dst$$reg);
+    loadStore(C2_MacroAssembler(&cbuf), false, dst_reg,
+              Matcher::vector_element_basic_type(this), as_Register($mem$$base), Matcher::vector_length_in_bytes(this), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct storeV_masked(vReg src, vmemA mem, vRegMask_V0 vmask) %{
+  match(Set mem (StoreVectorMasked mem (Binary src vmask)));
+  format %{ "storeV_masked $mem, $vmask, $src" %}
+  ins_encode %{
+    VectorRegister src_reg = as_VectorRegister($src$$reg);
+    loadStore(C2_MacroAssembler(&cbuf), true, src_reg,
+              Matcher::vector_element_basic_type(this, $src), as_Register($mem$$base), Matcher::vector_length_in_bytes(this, $src), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
 %}
