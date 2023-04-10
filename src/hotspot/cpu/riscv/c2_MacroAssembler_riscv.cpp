@@ -1786,7 +1786,7 @@ void C2_MacroAssembler::rvv_vector_integer_extend(VectorRegister dst, BasicType 
     } else {
       vsext_vf4(dst, src);
     }
-  } else if (src_bt == T_LONG) {
+  } else if (src_bt == T_INT) {
     vsext_vf2(dst, src);
   }
 }

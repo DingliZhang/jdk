@@ -2715,7 +2715,7 @@ instruct vcvtFtoX_narrow(vReg dst, vReg src, vReg tmp) %{
     __ vfcvt_x_f_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ rvv_vector_integer_narrow(as_VectorRegister($dst$$reg), bt, Matcher::vector_length_in_bytes(this),
-                                 as_VectorRegister($src$$reg), T_INT, as_VectorRegister($tmp$$reg));
+                                 as_VectorRegister($dst$$reg), T_INT, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -2731,7 +2731,7 @@ instruct vcvtFtoI(vReg dst, vReg src) %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     if (bt == T_LONG) {
       __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), T_LONG,
-                                   as_VectorRegister($src$$reg), T_INT);
+                                   as_VectorRegister($dst$$reg), T_INT);
     }
   %}
   ins_pipe(pipe_slow);
@@ -2763,7 +2763,7 @@ instruct vcvtDtoI(vReg dst, vReg src, vReg tmp) %{
     __ vfcvt_x_f_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ rvv_vector_integer_narrow(as_VectorRegister($dst$$reg), bt, Matcher::vector_length_in_bytes(this),
-                                 as_VectorRegister($src$$reg), T_LONG, as_VectorRegister($tmp$$reg));
+                                 as_VectorRegister($dst$$reg), T_LONG, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
