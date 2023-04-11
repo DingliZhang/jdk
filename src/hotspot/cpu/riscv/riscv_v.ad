@@ -69,7 +69,6 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorBlend:
       case Op_VectorCast:
       case Op_VectorCastB2X:
       case Op_VectorCastD2X:
@@ -2590,6 +2589,20 @@ instruct storeV_masked(vReg src, vmemA mem, vRegMask_V0 vmask) %{
     VectorRegister src_reg = as_VectorRegister($src$$reg);
     loadStore(C2_MacroAssembler(&cbuf), true, src_reg,
               Matcher::vector_element_basic_type(this, $src), as_Register($mem$$base), Matcher::vector_length_in_bytes(this, $src), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector blend ---------------------------------
+
+instruct vblend(vReg dst, vReg src1, vReg src2, vRegMask_V0 vmask) %{
+  match(Set dst (VectorBlend (Binary src1 src2) vmask));
+  format %{ "vmerge_vvm $dst, $src1, $src2\t# vector blend" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vmerge_vvm(as_VectorRegister($dst$$reg), as_VectorRegister($src1$$reg),
+                  as_VectorRegister($src2$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
