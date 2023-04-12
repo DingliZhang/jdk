@@ -1937,6 +1937,10 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
         opcode = Op_LoadVectorMasked;
     case Op_StoreVector:
         opcode = Op_StoreVectorMasked;
+    case Op_RShiftVB:
+    case Op_LShiftVB:
+    case Op_URShiftVB:
+    case Op_VectorBlend:
       return match_rule_supported_vector(opcode, vlen, bt);
     default:
       return false;
