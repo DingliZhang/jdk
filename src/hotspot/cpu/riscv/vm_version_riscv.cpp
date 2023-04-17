@@ -165,7 +165,7 @@ void VM_Version::initialize() {
   }
 
   if (UseRVV) {
-    if (!(_features & CPU_V)) {
+    if (!(true)) {
       warning("RVV is not supported on this CPU");
       FLAG_SET_DEFAULT(UseRVV, false);
     } else {

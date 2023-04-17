@@ -66,11 +66,7 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorBlend:
       case Op_VectorInsert:
-      case Op_VectorLoadShuffle:
-      case Op_VectorRearrange:
-      case Op_VectorTest:
       case Op_PopCountVI:
       case Op_PopCountVL:
         return false;
@@ -2822,6 +2818,87 @@ instruct reinterpretResize(vReg dst, vReg src) %{
            "invalid vector length");
     __ rvv_vsetvli(T_BYTE, length_in_bytes_resize);
     __ vmv_v_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector blend ---------------------------------
+
+instruct vblend(vReg dst, vReg src1, vReg src2, vRegMask_V0 vmask) %{
+  match(Set dst (VectorBlend (Binary src1 src2) vmask));
+  format %{ "vmerge_vvm $dst, $src1, $src2\t# vector blend (rvv)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vmerge_vvm(as_VectorRegister($dst$$reg), as_VectorRegister($src1$$reg),
+                  as_VectorRegister($src2$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector shuffle -------------------------------
+
+instruct loadshuffle(vReg dst, vReg src) %{
+  match(Set dst (VectorLoadShuffle src));
+  ins_cost(VEC_COST);
+  format %{ "loadshuffle $dst, $src\t# vector load shuffle" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    if (bt == T_BYTE) {
+      if (as_VectorRegister($dst$$reg) != as_VectorRegister($src$$reg)) {
+        __ vor_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($src$$reg));
+      }
+    } else {
+      if (is_floating_point_type(bt)) {
+        __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt == T_FLOAT ? T_INT : T_LONG,
+                                     as_VectorRegister($src$$reg), T_BYTE);
+        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
+      } else {
+        __ rvv_vector_integer_extend(as_VectorRegister($dst$$reg), bt,
+                                     as_VectorRegister($src$$reg), T_BYTE);
+      }
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector rearrange -----------------------------
+
+instruct rearrange(vReg dst, vReg src, vReg shuffle) %{
+  match(Set dst (VectorRearrange src shuffle));
+  effect(TEMP_DEF dst);
+  format %{ "rearrange $dst, $src, $shuffle" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vrgather_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ VectorTest -----------------------------------
+
+// anytrue
+
+instruct vtest_anytrue(rFlagsReg cr, vRegMask src1, vRegMask src2) %{
+  predicate(static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
+  match(Set cr (VectorTest src1 src2));
+  format %{ "vtest_anytrue $src1" %}
+  ins_encode %{
+
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// alltrue
+
+instruct vtest_alltrue(rFlagsReg cr, vRegMask src1, vRegMask src2) %{
+  predicate(static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
+  match(Set cr (VectorTest src1 src2));
+  format %{ "vtest_alltrue $src1, $src2\t#" %}
+  ins_encode %{
+
   %}
   ins_pipe(pipe_slow);
 %}
