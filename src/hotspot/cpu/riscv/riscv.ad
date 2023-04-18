@@ -9671,10 +9671,14 @@ instruct far_cmpP_narrowOop_imm0_branch(cmpOpEqNe cmp, iRegN op1, immP0 zero, la
 instruct cmovI_reg_reg(cmpOp cmp, rFlagsReg cr, iRegINoSp dst, iRegIorL2I src1, iRegIorL2I src2) %{
   match(Set dst (CMoveI (Binary cmp cr) (Binary src1 src2)));
 
-  format %{ "cselw $dst, $src2, $src1 $cmp\t# signed, int"  %}
+  format %{ "cmovI_reg_reg $dst, $src2, $src1 $cmp\t# signed, int"  %}
 
   ins_encode %{
-
+    Label L;
+    __ mv(as_Register($dst$$reg), as_Register($src1$$reg));
+    __ bnez(as_Register($cr$$reg), L);
+    __ mv(as_Register($dst$$reg), as_Register($src2$$reg));
+    __ bind(L);
   %}
 
   ins_pipe(pipe_class_compare);

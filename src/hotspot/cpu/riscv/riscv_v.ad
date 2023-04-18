@@ -2886,19 +2886,28 @@ instruct vtest_anytrue(rFlagsReg cr, vRegMask src1, vRegMask src2) %{
   match(Set cr (VectorTest src1 src2));
   format %{ "vtest_anytrue $src1" %}
   ins_encode %{
-
+    BasicType bt = Matcher::vector_element_basic_type(this, $src1);
+    __ rvv_vsetvli(bt,  Matcher::vector_length_in_bytes(this, $src1));
+    __ vcpop_m($cr$$Register, as_VectorRegister($src1$$reg));
+    __ sgtz($cr$$Register, $cr$$Register);
   %}
   ins_pipe(pipe_slow);
 %}
 
 // alltrue
 
-instruct vtest_alltrue(rFlagsReg cr, vRegMask src1, vRegMask src2) %{
+instruct vtest_alltrue(rFlagsReg cr, vRegMask src1, vRegMask src2, vReg tmp) %{
   predicate(static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
   match(Set cr (VectorTest src1 src2));
+  effect(TEMP tmp);
   format %{ "vtest_alltrue $src1, $src2\t#" %}
   ins_encode %{
-
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $src1);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src1);
+    __ rvv_vsetvli(bt, length_in_bytes);
+    __ vcpop_m($cr$$Register, as_VectorRegister($src1$$reg));
+    __ subw($cr$$Register, $cr$$Register, length_in_bytes);
+    __ seqz($cr$$Register, $cr$$Register);
   %}
   ins_pipe(pipe_slow);
 %}
