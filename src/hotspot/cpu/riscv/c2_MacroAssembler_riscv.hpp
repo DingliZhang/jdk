@@ -164,63 +164,63 @@
                         Register tmp1, Register tmp2,
                         int encForm);
 
- void clear_array_v(Register base, Register cnt);
+  void clear_array_v(Register base, Register cnt);
 
- void byte_array_inflate_v(Register src, Register dst,
-                           Register len, Register tmp);
+  void byte_array_inflate_v(Register src, Register dst,
+                            Register len, Register tmp);
 
- void char_array_compress_v(Register src, Register dst,
-                            Register len, Register result,
-                            Register tmp);
+  void char_array_compress_v(Register src, Register dst,
+                             Register len, Register result,
+                             Register tmp);
 
- void encode_iso_array_v(Register src, Register dst,
-                         Register len, Register result,
-                         Register tmp);
+  void encode_iso_array_v(Register src, Register dst,
+                          Register len, Register result,
+                          Register tmp);
 
- void count_positives_v(Register ary, Register len,
-                        Register result, Register tmp);
+  void count_positives_v(Register ary, Register len,
+                         Register result, Register tmp);
 
- void string_indexof_char_v(Register str1, Register cnt1,
-                            Register ch, Register result,
-                            Register tmp1, Register tmp2,
-                            bool isL);
+  void string_indexof_char_v(Register str1, Register cnt1,
+                             Register ch, Register result,
+                             Register tmp1, Register tmp2,
+                             bool isL);
 
- void minmax_FD_v(VectorRegister dst,
-                  VectorRegister src1, VectorRegister src2,
-                  bool is_double, bool is_min, int length_in_bytes);
+  void minmax_FD_v(VectorRegister dst,
+                   VectorRegister src1, VectorRegister src2,
+                   bool is_double, bool is_min, int length_in_bytes);
 
- void reduce_minmax_FD_v(FloatRegister dst,
-                         FloatRegister src1, VectorRegister src2,
-                         VectorRegister tmp1, VectorRegister tmp2,
-                         bool is_double, bool is_min, int length_in_bytes);
+  void reduce_minmax_FD_v(FloatRegister dst,
+                          FloatRegister src1, VectorRegister src2,
+                          VectorRegister tmp1, VectorRegister tmp2,
+                          bool is_double, bool is_min, int length_in_bytes);
 
- void rvv_reduce_integral(Register dst, VectorRegister tmp,
-                          Register src1, VectorRegister src2,
-                          BasicType bt, int opc, int length_in_bytes);
+  void rvv_reduce_integral(Register dst, VectorRegister tmp,
+                           Register src1, VectorRegister src2,
+                           BasicType bt, int opc, int length_in_bytes);
 
- void rvv_vsetvli(BasicType bt, int length_in_bytes, Register tmp = t0);
+  void rvv_vsetvli(BasicType bt, int length_in_bytes, Register tmp = t0);
 
- void compare_integral_v(VectorRegister dst, BasicType bt, int length_in_bytes,
+  void compare_integral_v(VectorRegister dst, BasicType bt, int length_in_bytes,
                          VectorRegister src1, VectorRegister src2, int cond, VectorMask vm = Assembler::unmasked);
 
- void compare_floating_point_v(VectorRegister dst, BasicType bt, int length_in_bytes,
+  void compare_floating_point_v(VectorRegister dst, BasicType bt, int length_in_bytes,
                                VectorRegister src1, VectorRegister src2, VectorRegister tmp1, VectorRegister tmp2,
                                int cond, VectorMask vm = Assembler::unmasked);
 
- // In Matcher::scalable_predicate_reg_slots,
- // we assume each predicate register is one-eighth of the size of
- // scalable vector register, one mask bit per vector byte.
- void spill_vmask(VectorRegister v, int offset){
-   rvv_vsetvli(T_BYTE, MaxVectorSize >> 3);
-   add(t0, sp, offset);
-   vse8_v(v, t0);
- }
+  // In Matcher::scalable_predicate_reg_slots,
+  // we assume each predicate register is one-eighth of the size of
+  // scalable vector register, one mask bit per vector byte.
+  void spill_vmask(VectorRegister v, int offset){
+    rvv_vsetvli(T_BYTE, MaxVectorSize >> 3);
+    add(t0, sp, offset);
+    vse8_v(v, t0);
+  }
 
- void unspill_vmask(VectorRegister v, int offset){
-   rvv_vsetvli(T_BYTE, MaxVectorSize >> 3);
-   add(t0, sp, offset);
-   vle8_v(v, t0);
- }
+  void unspill_vmask(VectorRegister v, int offset){
+    rvv_vsetvli(T_BYTE, MaxVectorSize >> 3);
+    add(t0, sp, offset);
+    vle8_v(v, t0);
+  }
 
   void spill_copy_vmask_stack_to_stack(int src_offset, int dst_offset, int vector_length_in_bytes) {
     assert(vector_length_in_bytes % 4 == 0, "unexpected vector mask reg size");
@@ -235,5 +235,11 @@
     vsetvli(t0, x0, Assembler::e64);
     vxor_vv(v, v, v);
   }
+
+  void vector_integer_extend(VectorRegister dst, BasicType dst_bt,
+                                VectorRegister src, BasicType src_bt);
+
+  void vector_integer_narrow(VectorRegister dst, BasicType dst_bt, int length_in_bytes,
+                                VectorRegister src, BasicType src_bt, VectorRegister tmp);
 
 #endif // CPU_RISCV_C2_MACROASSEMBLER_RISCV_HPP
