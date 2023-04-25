@@ -1744,9 +1744,11 @@ void C2_MacroAssembler::compare_integral_v(VectorRegister vd, BasicType bt, int 
 
 void C2_MacroAssembler::compare_floating_point_v(VectorRegister vd, BasicType bt, int length_in_bytes,
                                                  VectorRegister src1, VectorRegister src2,
-                                                 VectorRegister tmp1, VectorRegister tmp2, int cond, VectorMask vm) {
+                                                 VectorRegister tmp1, VectorRegister tmp2, 
+                                                 VectorRegister vmask, int cond, VectorMask vm) {
   assert(is_floating_point_type(bt), "unsupported element type");
   assert(vd != v0, "should be different registers");
+  assert(vm == Assembler::v0_t ? vmask != v0 : true, "vmask should not be v0");
   rvv_vsetvli(bt, length_in_bytes);
   // Check vector elements of src1 and src2 for quiet or signaling NaN.
   vfclass_v(tmp1, src1);
@@ -1758,9 +1760,9 @@ void C2_MacroAssembler::compare_floating_point_v(VectorRegister vd, BasicType bt
   if (vm == Assembler::v0_t) {
     vmand_mm(tmp2, tmp1, tmp2);
     if (cond == BoolTest::ne) {
-      vmandn_mm(tmp1, v0, tmp2);
+      vmandn_mm(tmp1, vmask, tmp2);
     }
-    vmand_mm(v0, v0, tmp2);
+    vmand_mm(v0, vmask, tmp2);
   } else {
     vmand_mm(v0, tmp1, tmp2);
     if (cond == BoolTest::ne) {
