@@ -212,7 +212,7 @@ instruct vmaskcmp_fp(vRegMask dst, vReg src1, vReg src2, immI cond, vRegMask_V0 
   ins_pipe(pipe_slow);
 %}
 
-instruct vmaskcmp_fp_masked(vRegMask dst, vReg src1, vReg src2, immI cond, vRegMask_V0 v0, vReg tmp1, vReg tmp2, vReg tmp3) %{
+instruct vmaskcmp_fp_masked(vRegMask dst, vReg src1, vReg src2, immI cond, vRegMask_V0 v0, vReg tmp1, vReg tmp2, vRegMask tmp3) %{
   predicate(Matcher::vector_element_basic_type(n) == T_FLOAT ||
             Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (VectorMaskCmp (Binary src1 src2) (Binary cond v0)));
@@ -1521,7 +1521,7 @@ instruct vasrL(vReg dst, vReg src, vReg shift) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vasrB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
+instruct vasrB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vRegMask tmp) %{
   match(Set dst_src (RShiftVB (Binary dst_src shift) v0));
   ins_cost(VEC_COST);
   effect(TEMP_DEF dst_src, TEMP tmp);
@@ -1540,7 +1540,7 @@ instruct vasrB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vasrS_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
+instruct vasrS_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vRegMask tmp) %{
   match(Set dst_src (RShiftVS (Binary dst_src shift) v0));
   ins_cost(VEC_COST);
   effect(TEMP_DEF dst_src, TEMP tmp);
@@ -1647,7 +1647,7 @@ instruct vlslL(vReg dst, vReg src, vReg shift) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vlslB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
+instruct vlslB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vRegMask tmp) %{
   match(Set dst_src (LShiftVB (Binary dst_src shift) v0));
   ins_cost(VEC_COST);
   effect(TEMP_DEF dst_src, TEMP tmp);
@@ -1669,7 +1669,7 @@ instruct vlslB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vlslS_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
+instruct vlslS_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vRegMask tmp) %{
   match(Set dst_src (LShiftVS (Binary dst_src shift) v0));
   ins_cost(VEC_COST);
   effect(TEMP_DEF dst_src, TEMP tmp);
@@ -1779,7 +1779,7 @@ instruct vlsrL(vReg dst, vReg src, vReg shift) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vlsrB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
+instruct vlsrB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vRegMask tmp) %{
   match(Set dst_src (URShiftVB (Binary dst_src shift) v0));
   ins_cost(VEC_COST);
   effect(TEMP_DEF dst_src, TEMP tmp);
@@ -1801,7 +1801,7 @@ instruct vlsrB_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vlsrS_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vReg tmp) %{
+instruct vlsrS_masked(vReg dst_src, vReg shift, vRegMask_V0 v0, vRegMask tmp) %{
   match(Set dst_src (URShiftVS (Binary dst_src shift) v0));
   ins_cost(VEC_COST);
   effect(TEMP_DEF dst_src, TEMP tmp);
