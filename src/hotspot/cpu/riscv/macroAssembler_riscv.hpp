@@ -1259,6 +1259,80 @@ public:
     }
   }
 
+  // Vector indexed-unordered load/store instructions
+  void vluxeix_v(VectorRegister vd, Register base, VectorRegister vs, Assembler::SEW sew, VectorMask vm = unmasked) {
+    switch (sew) {
+      case Assembler::e64:
+        vluxei64_v(vd, base, vs, vm);
+        break;
+      case Assembler::e32:
+        vluxei32_v(vd, base, vs, vm);
+        break;
+      case Assembler::e16:
+        vluxei16_v(vd, base, vs, vm);
+        break;
+      case Assembler::e8: // fall through
+      default:
+        vluxei8_v(vd, base, vs, vm);
+        break;
+    }
+  }
+
+  void vsuxeix_v(VectorRegister store_data, Register base, VectorRegister vs, Assembler::SEW sew, VectorMask vm = unmasked) {
+    switch (sew) {
+      case Assembler::e64:
+        vsuxei64_v(store_data, base, vs, vm);
+        break;
+      case Assembler::e32:
+        vsuxei32_v(store_data, base, vs, vm);
+        break;
+      case Assembler::e16:
+        vsuxei16_v(store_data, base, vs, vm);
+        break;
+      case Assembler::e8: // fall through
+      default:
+        vsuxei8_v(store_data, base, vs, vm);
+        break;
+    }
+  }
+
+  // Vector indexed-ordered load/store instructions
+  void vloxeix_v(VectorRegister vd, Register base, VectorRegister vs, Assembler::SEW sew, VectorMask vm = unmasked) {
+    switch (sew) {
+      case Assembler::e64:
+        vloxei64_v(vd, base, vs, vm);
+        break;
+      case Assembler::e32:
+        vloxei32_v(vd, base, vs, vm);
+        break;
+      case Assembler::e16:
+        vloxei16_v(vd, base, vs, vm);
+        break;
+      case Assembler::e8: // fall through
+      default:
+        vloxei8_v(vd, base, vs, vm);
+        break;
+    }
+  }
+
+  void vsoxeix_v(VectorRegister store_data, Register base, VectorRegister vs, Assembler::SEW sew, VectorMask vm = unmasked) {
+    switch (sew) {
+      case Assembler::e64:
+        vsoxei64_v(store_data, base, vs, vm);
+        break;
+      case Assembler::e32:
+        vsoxei32_v(store_data, base, vs, vm);
+        break;
+      case Assembler::e16:
+        vsoxei16_v(store_data, base, vs, vm);
+        break;
+      case Assembler::e8: // fall through
+      default:
+        vsoxei8_v(store_data, base, vs, vm);
+        break;
+    }
+  }
+
   // vector pseudo instructions
   inline void vmnot_m(VectorRegister vd, VectorRegister vs) {
     vmnand_mm(vd, vs, vs);
