@@ -7653,6 +7653,33 @@ instruct sqrtD_reg(fRegD dst, fRegD src) %{
   ins_pipe(fp_sqrt_d);
 %}
 
+// Math.rint, floor, ceil
+instruct roundD_reg(fRegD dst, fRegD src, immI rmode, iRegL tmp) %{
+  match(Set dst (RoundDoubleMode src rmode));
+  effect(TEMP tmp);
+  format %{ "frint  $dst, $src, $rmode" %}
+  ins_encode %{
+    switch ($rmode$$constant) {
+      case RoundDoubleModeNode::rmode_rint:
+        __ csrwi(CSR_FRM, C2_MacroAssembler::rne);
+        __ fcvt_l_d(as_Register($tmp$$reg), as_FloatRegister($src$$reg));
+        __ fcvt_d_l(as_FloatRegister($dst$$reg), as_Register($tmp$$reg));
+        break;
+      case RoundDoubleModeNode::rmode_floor:
+        __ csrwi(CSR_FRM, C2_MacroAssembler::rdn);
+        __ fcvt_l_d(as_Register($tmp$$reg), as_FloatRegister($src$$reg));
+        __ fcvt_d_l(as_FloatRegister($dst$$reg), as_Register($tmp$$reg));
+        break;
+      case RoundDoubleModeNode::rmode_ceil:
+        __ csrwi(CSR_FRM, C2_MacroAssembler::rup);
+        __ fcvt_l_d(as_Register($tmp$$reg), as_FloatRegister($src$$reg));
+        __ fcvt_d_l(as_FloatRegister($dst$$reg), as_Register($tmp$$reg));
+        break;
+    }
+  %}
+  ins_pipe(pipe_class_default);
+%}
+
 // Arithmetic Instructions End
 
 // ============================================================================

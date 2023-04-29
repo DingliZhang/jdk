@@ -1307,23 +1307,30 @@ instruct vreduce_minD(fRegD dst, fRegD src1, vReg src2, vReg tmp1, vReg tmp2) %{
 
 // vector Math.rint, floor, ceil
 
-instruct vroundD(vReg dst, vReg src, immI rmode) %{
+instruct vroundD(vReg dst, vReg src, immI rmode, vReg tmp) %{
   predicate(Matcher::vector_element_basic_type(n) == T_DOUBLE);
   match(Set dst (RoundDoubleModeV src rmode));
+  effect(TEMP tmp);
   format %{ "vroundD $dst, $src, $rmode" %}
   ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
     switch ($rmode$$constant) {
       case RoundDoubleModeNode::rmode_rint:
         __ csrwi(CSR_FRM, C2_MacroAssembler::rne);
-        __ vfcvt_rtz_x_f_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_x_f_v(as_VectorRegister($tmp$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg));
         break;
       case RoundDoubleModeNode::rmode_floor:
         __ csrwi(CSR_FRM, C2_MacroAssembler::rdn);
-        __ vfcvt_rtz_x_f_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_x_f_v(as_VectorRegister($tmp$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg));
         break;
       case RoundDoubleModeNode::rmode_ceil:
         __ csrwi(CSR_FRM, C2_MacroAssembler::rup);
-        __ vfcvt_rtz_x_f_v(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_x_f_v(as_VectorRegister($tmp$$reg), as_VectorRegister($src$$reg));
+        __ vfcvt_f_x_v(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg));
         break;
       default:
         ShouldNotReachHere();
@@ -2968,6 +2975,24 @@ instruct rearrange(vReg dst, vReg src, vReg shuffle) %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
     __ vrgather_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Populate Index to a Vector -------------------
+
+instruct populateindex(vReg dst, iRegIorL2I src1, immI src2, vReg tmp1, iRegI tmp2) %{
+  match(Set dst (PopulateIndex src1 src2));
+  effect(TEMP tmp1, TEMP tmp2);
+  format %{ "populateindex $dst, $src1, $src2\t # populate index" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ rvv_vsetvli(bt, Matcher::vector_length_in_bytes(this));
+    __ vmv_v_x(as_VectorRegister($dst$$reg), as_Register($src1$$reg));
+    __ vid_v(as_VectorRegister($tmp1$$reg));
+    __ li(as_Register($tmp2$$reg), (int)($src2$$constant));
+    __ vmacc_vx(as_VectorRegister($dst$$reg), as_Register($tmp2$$reg), as_VectorRegister($tmp1$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
