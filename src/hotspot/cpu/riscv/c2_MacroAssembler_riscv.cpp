@@ -1872,3 +1872,37 @@ VFCVT_SAFE(vfncvt_rtz_xu_f_w);
 VFCVT_SAFE(vfncvt_rtz_x_f_w);
 
 #undef VFCVT_SAFE
+
+// Extract a scalar element from an vector at position 'idx'.
+// The input elements in src are expected to be of integral type.
+void C2_MacroAssembler::extract_v(Register dst, BasicType bt, int vector_length,
+                                  VectorRegister src, int idx, VectorRegister tmp) {
+  assert(is_integral_type(bt), "unsupported element type");
+  assert(idx >= 0, "idx cannot be negative");
+  rvv_vsetvli(bt, vector_length);
+  vmv_v_v(tmp, src);
+  if (idx > 31) {
+    mv(t0, idx);
+    vslidedown_vx(tmp, tmp, t0);
+  } else if (idx <= 31 && idx != 0) {
+    vslidedown_vi(tmp, tmp, idx);
+  }
+  vmv_x_s(dst, tmp);
+}
+
+// Extract a scalar element from an vector at position 'idx'.
+// The input elements in src are expected to be of floating point type.
+void C2_MacroAssembler::extract_fp_v(FloatRegister dst, BasicType bt, int vector_length,
+                                     VectorRegister src, int idx, VectorRegister tmp) {
+  assert(is_floating_point_type(bt), "unsupported element type");
+  assert(idx >= 0, "idx cannot be negative");
+  rvv_vsetvli(bt, vector_length);
+  vmv_v_v(tmp, src);
+  if (idx > 31) {
+    mv(t0, idx);
+    vslidedown_vx(tmp, tmp, t0);
+  } else if (idx <= 31 && idx != 0) {
+    vslidedown_vi(tmp, tmp, idx);
+  }
+  vfmv_f_s(dst, tmp);
+}

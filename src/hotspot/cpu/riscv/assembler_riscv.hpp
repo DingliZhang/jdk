@@ -1308,6 +1308,10 @@ enum VectorMask {
   INSN(vsrl_vi,    0b1010111, 0b011, 0b101000);
   INSN(vsll_vi,    0b1010111, 0b011, 0b100101);
 
+  // Vector Slide Instructions
+  INSN(vslideup_vi,   0b1010111, 0b011, 0b001110);
+  INSN(vslidedown_vi, 0b1010111, 0b011, 0b001111);
+
 #undef INSN
 
 #define INSN(NAME, op, funct3, funct6)                                                             \
@@ -1511,6 +1515,10 @@ enum VectorMask {
 
   // Vector Register Gather Instructions
   INSN(vrgather_vx, 0b1010111, 0b100, 0b001100);
+
+  // Vector Slide Instructions
+  INSN(vslideup_vx,   0b1010111, 0b100, 0b001110);
+  INSN(vslidedown_vx, 0b1010111, 0b100, 0b001111);
 
 #undef INSN
 

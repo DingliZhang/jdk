@@ -57,16 +57,6 @@ source %{
       case Op_MulReductionVF:
       case Op_MulReductionVI:
       case Op_MulReductionVL:
-      // Others
-      case Op_Extract:
-      case Op_ExtractB:
-      case Op_ExtractC:
-      case Op_ExtractD:
-      case Op_ExtractF:
-      case Op_ExtractI:
-      case Op_ExtractL:
-      case Op_ExtractS:
-      case Op_ExtractUB:
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
@@ -2957,6 +2947,60 @@ instruct rearrange(vReg dst, vReg src, vReg shuffle) %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ rvv_vsetvli(bt, Matcher::vector_length(this));
     __ vrgather_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg), as_VectorRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector extract ---------------------------------
+
+instruct extract(iRegINoSp dst, vReg src, immI idx, vReg tmp)
+%{
+  match(Set dst (ExtractB src idx));
+  match(Set dst (ExtractS src idx));
+  match(Set dst (ExtractI src idx));
+  effect(TEMP tmp);
+  format %{ "extract $dst, $src, $idx\t# KILL $tmp" %}
+  ins_encode %{
+    __ extract_v($dst$$Register, Matcher::vector_element_basic_type(this, $src),
+                 Matcher::vector_length(this, $src), as_VectorRegister($src$$reg),
+                 (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractL(iRegLNoSp dst, vReg src, immI idx, vReg tmp)
+%{
+  match(Set dst (ExtractL src idx));
+  effect(TEMP tmp);
+  format %{ "extractL $dst, $src, $idx\t# KILL $tmp" %}
+  ins_encode %{
+    __ extract_v($dst$$Register, T_LONG, Matcher::vector_length(this, $src),
+                 as_VectorRegister($src$$reg), (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+
+instruct extractF(fRegF dst, vReg src, immI idx, vReg tmp)
+%{
+  match(Set dst (ExtractF src idx));
+  effect(TEMP tmp);
+  format %{ "extractF $dst, $src, $idx\t# KILL $tmp" %}
+  ins_encode %{
+    __ extract_fp_v($dst$$FloatRegister, T_FLOAT, Matcher::vector_length(this, $src),
+                    as_VectorRegister($src$$reg), (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct extractD(fRegD dst, vReg src, immI idx, vReg tmp)
+%{
+  match(Set dst (ExtractD src idx));
+  effect(TEMP tmp);
+  format %{ "extractD $dst, $src, $idx\t# KILL $tmp" %}
+  ins_encode %{
+    __ extract_fp_v($dst$$FloatRegister, T_DOUBLE, Matcher::vector_length(this, $src),
+                    as_VectorRegister($src$$reg), (int)($idx$$constant), as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
