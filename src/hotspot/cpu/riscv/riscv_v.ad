@@ -2960,3 +2960,52 @@ instruct rearrange(vReg dst, vReg src, vReg shuffle) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+
+// ------------------------------ Compress/Expand Operations -------------------
+instruct mcompress(vRegMask dst, vRegMask vmask, iRegLNoSp tmp) %{
+  match(Set dst (CompressM vmask));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "mcompress $dst, $vmask\t# KILL $tmp" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
+    __ vsetvli_helper(bt, Matcher::vector_length(this));
+    __ vmclr_m(as_VectorRegister($dst$$reg));
+    __ vcpop_m($tmp$$Register, as_VectorRegister($vmask$$reg));
+    __ vsetvli(t0, $tmp$$Register, sew);
+    __ vmset_m(as_VectorRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcompress(vReg dst, vReg src, vRegMask_V0 v0) %{
+  match(Set dst (CompressV src v0));
+  effect(TEMP_DEF dst);
+  format %{ "vcompress $dst, $src, $v0" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vsetvli_helper(bt, Matcher::vector_length(this));
+    __ vxor_vv(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg),
+               as_VectorRegister($dst$$reg));
+    __ vcompress_vm(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg),
+                    as_VectorRegister($v0$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vexpand(vReg dst, vReg src, vRegMask_V0 v0, vReg tmp) %{
+  match(Set dst (ExpandV src v0));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vexpand $dst, $src, $v0" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vsetvli_helper(bt, Matcher::vector_length(this));
+    __ viota_m(as_VectorRegister($tmp$$reg), as_VectorRegister($v0$$reg));
+    __ vxor_vv(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg),
+               as_VectorRegister($dst$$reg));
+    __ vrgather_vv(as_VectorRegister($dst$$reg), as_VectorRegister($src$$reg),
+                   as_VectorRegister($tmp$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
