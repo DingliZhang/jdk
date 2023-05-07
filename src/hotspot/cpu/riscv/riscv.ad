@@ -1951,6 +1951,7 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_LoadVectorGatherMasked:
     case Op_StoreVectorScatter:
     case Op_StoreVectorScatterMasked:
+    case Op_VectorMaskFirstTrue:
     case Op_VectorReinterpret:
       break;
     case Op_LoadVector:

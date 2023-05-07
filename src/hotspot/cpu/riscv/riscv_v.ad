@@ -3047,16 +3047,16 @@ instruct extractD(fRegD dst, vReg src, immI idx, vReg tmp)
 %}
 
 // ------------------------------ Compress/Expand Operations -------------------
-instruct mcompress(vRegMask dst, vRegMask vmask, iRegLNoSp tmp) %{
-  match(Set dst (CompressM vmask));
+instruct mcompress(vRegMask dst, vRegMask src, iRegLNoSp tmp) %{
+  match(Set dst (CompressM src));
   effect(TEMP_DEF dst, TEMP tmp);
-  format %{ "mcompress $dst, $vmask\t# KILL $tmp" %}
+  format %{ "mcompress $dst, $src\t# KILL $tmp" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this));
     __ vmclr_m(as_VectorRegister($dst$$reg));
-    __ vcpop_m($tmp$$Register, as_VectorRegister($vmask$$reg));
+    __ vcpop_m($tmp$$Register, as_VectorRegister($src$$reg));
     __ vsetvli(t0, $tmp$$Register, sew);
     __ vmset_m(as_VectorRegister($dst$$reg));
   %}
@@ -3168,6 +3168,43 @@ instruct scatter_store_masked(indirect mem, vReg src, vReg idx, vRegMask_V0 v0, 
     __ vsll_vi(as_VectorRegister($tmp$$reg), as_VectorRegister($tmp$$reg), (int)sew);
     __ vsoxei32_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
                   as_VectorRegister($tmp$$reg), Assembler::v0_t);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_truecount(iRegINoSp dst, vRegMask src) %{
+  match(Set dst (VectorMaskTrueCount src));
+  format %{ "vmask_truecount $dst, $src" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
+    __ vcpop_m($dst$$Register, as_VectorRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_firsttrue(iRegINoSp dst, vRegMask src, vRegMask tmp) %{
+  match(Set dst (VectorMaskFirstTrue src));
+  effect(TEMP tmp);
+  format %{ "vmask_firsttrue $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
+    __ vmsbf_m(as_VectorRegister($tmp$$reg), as_VectorRegister($src$$reg));
+    __ vcpop_m($dst$$Register, as_VectorRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_firsttrue_masked(iRegINoSp dst, vRegMask src, vRegMask_V0 v0, vRegMask tmp) %{
+  match(Set dst (VectorMaskFirstTrue src v0));
+  effect(TEMP tmp);
+  format %{ "vmask_firsttrue_masked $dst, $src, $v0\t# KILL $tmp" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
+    __ vmsbf_m(as_VectorRegister($tmp$$reg), as_VectorRegister($src$$reg), Assembler::v0_t);
+    __ vcpop_m($dst$$Register, as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
