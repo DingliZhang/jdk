@@ -1775,9 +1775,6 @@ enum Nf {
   // Vector unordered indexed store instructions
   INSN(vsuxei32_v, 0b0100111, 0b110, 0b01, 0b0);
 
-  // Vector ordered indexed store instructions
-  INSN(vsoxei32_v, 0b0100111, 0b110, 0b11, 0b0);
-
 #undef INSN
 
 #define INSN(NAME, op, width, mop, mew)                                                                  \

@@ -3135,7 +3135,7 @@ instruct gather_load(vReg dst, vmemA mem, vReg idx, vReg tmp) %{
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this));
     __ vsll_vi(as_VectorRegister($tmp$$reg), as_VectorRegister($tmp$$reg), (int)sew);
-    __ vloxei32_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+    __ vluxei32_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
                   as_VectorRegister($tmp$$reg));
  %}
   ins_pipe(pipe_slow);
@@ -3155,7 +3155,7 @@ instruct gather_load_masked(vReg dst, vmemA mem, vReg idx, vRegMask_V0 v0, vReg 
     __ vsll_vi(as_VectorRegister($tmp$$reg), as_VectorRegister($tmp$$reg), (int)sew);
     __ vxor_vv(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg),
                as_VectorRegister($dst$$reg));
-    __ vloxei32_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
+    __ vluxei32_v(as_VectorRegister($dst$$reg), as_Register($mem$$base),
                   as_VectorRegister($tmp$$reg), Assembler::v0_t);
  %}
   ins_pipe(pipe_slow);
@@ -3175,7 +3175,7 @@ instruct scatter_store(indirect mem, vReg src, vReg idx, vReg tmp) %{
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
     __ vsll_vi(as_VectorRegister($tmp$$reg), as_VectorRegister($tmp$$reg), (int)sew);
-    __ vsoxei32_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
+    __ vsuxei32_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
                   as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
@@ -3193,7 +3193,7 @@ instruct scatter_store_masked(indirect mem, vReg src, vReg idx, vRegMask_V0 v0, 
     Assembler::SEW sew = Assembler::elemtype_to_sew(bt);
     __ vsetvli_helper(bt, Matcher::vector_length(this, $src));
     __ vsll_vi(as_VectorRegister($tmp$$reg), as_VectorRegister($tmp$$reg), (int)sew);
-    __ vsoxei32_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
+    __ vsuxei32_v(as_VectorRegister($src$$reg), as_Register($mem$$base),
                   as_VectorRegister($tmp$$reg), Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
