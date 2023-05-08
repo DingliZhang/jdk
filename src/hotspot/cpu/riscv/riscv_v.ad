@@ -182,10 +182,10 @@ instruct vmaskcmp_fp(vRegMask dst, vReg src1, vReg src2, immI cond, vRegMask_V0 
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     uint vector_length = Matcher::vector_length(this);
-    __ compare_floating_point_v(as_VectorRegister($dst$$reg), bt, vector_length,
-                                as_VectorRegister($src1$$reg), as_VectorRegister($src2$$reg),
-                                as_VectorRegister($tmp1$$reg), as_VectorRegister($tmp2$$reg),
-                                as_VectorRegister($v0$$reg), (int)($cond$$constant));
+    __ compare_fp_v(as_VectorRegister($dst$$reg), bt, vector_length,
+                    as_VectorRegister($src1$$reg), as_VectorRegister($src2$$reg),
+                    as_VectorRegister($tmp1$$reg), as_VectorRegister($tmp2$$reg),
+                    as_VectorRegister($v0$$reg), (int)($cond$$constant));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -199,10 +199,10 @@ instruct vmaskcmp_fp_masked(vRegMask dst, vReg src1, vReg src2, immI cond, vRegM
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     uint vector_length = Matcher::vector_length(this);
-    __ compare_floating_point_v(as_VectorRegister($dst$$reg), bt, vector_length,
-                                as_VectorRegister($src1$$reg), as_VectorRegister($src2$$reg),
-                                as_VectorRegister($tmp1$$reg), as_VectorRegister($tmp2$$reg),
-                                as_VectorRegister($vmask$$reg), (int)($cond$$constant), Assembler::v0_t);
+    __ compare_fp_v(as_VectorRegister($dst$$reg), bt, vector_length,
+                    as_VectorRegister($src1$$reg), as_VectorRegister($src2$$reg),
+                    as_VectorRegister($tmp1$$reg), as_VectorRegister($tmp2$$reg),
+                    as_VectorRegister($vmask$$reg), (int)($cond$$constant), Assembler::v0_t);
   %}
   ins_pipe(pipe_slow);
 %}

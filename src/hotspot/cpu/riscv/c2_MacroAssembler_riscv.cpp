@@ -1739,10 +1739,10 @@ void C2_MacroAssembler::compare_integral_v(VectorRegister vd, BasicType bt, int 
   }
 }
 
-void C2_MacroAssembler::compare_floating_point_v(VectorRegister vd, BasicType bt, int vector_length,
-                                                 VectorRegister src1, VectorRegister src2,
-                                                 VectorRegister tmp1, VectorRegister tmp2,
-                                                 VectorRegister vmask, int cond, VectorMask vm) {
+void C2_MacroAssembler::compare_fp_v(VectorRegister vd, BasicType bt, int vector_length,
+                                     VectorRegister src1, VectorRegister src2,
+                                     VectorRegister tmp1, VectorRegister tmp2,
+                                     VectorRegister vmask, int cond, VectorMask vm) {
   assert(is_floating_point_type(bt), "unsupported element type");
   assert(vd != v0, "should be different registers");
   assert(vm == Assembler::v0_t ? vmask != v0 : true, "vmask should not be v0");
