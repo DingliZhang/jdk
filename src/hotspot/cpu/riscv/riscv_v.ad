@@ -2543,7 +2543,6 @@ instruct vmaskAllI_masked(vRegMask dst, iRegI src, vRegMask_V0 v0, vReg tmp) %{
     __ vmv_v_x(as_VectorRegister($tmp$$reg), as_Register($src$$reg));
     __ vmxor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg), zr, Assembler::v0_t);
-    __ should_not_reach_here();
   %}
   ins_pipe(pipe_slow);
 %}
@@ -2587,7 +2586,6 @@ instruct vmaskAllL_masked(vRegMask dst, iRegL src, vRegMask_V0 v0, vReg tmp) %{
     __ vmv_v_x(as_VectorRegister($tmp$$reg), as_Register($src$$reg));
     __ vmxor_mm(as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg), as_VectorRegister($dst$$reg));
     __ vmsne_vx(as_VectorRegister($dst$$reg), as_VectorRegister($tmp$$reg), zr, Assembler::v0_t);
-    __ should_not_reach_here();
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3032,8 +3030,8 @@ instruct extract(iRegINoSp dst, vReg src, immI idx, vReg tmp)
   format %{ "extract $dst, $src, $idx\t# KILL $tmp" %}
   ins_encode %{
     __ extract_v($dst$$Register, Matcher::vector_element_basic_type(this, $src),
-                 Matcher::vector_length(this, $src), as_VectorRegister($src$$reg),
-                 (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+                 as_VectorRegister($src$$reg), (int)($idx$$constant),
+                 as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3044,8 +3042,8 @@ instruct extractL(iRegLNoSp dst, vReg src, immI idx, vReg tmp)
   effect(TEMP tmp);
   format %{ "extractL $dst, $src, $idx\t# KILL $tmp" %}
   ins_encode %{
-    __ extract_v($dst$$Register, T_LONG, Matcher::vector_length(this, $src),
-                 as_VectorRegister($src$$reg), (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+    __ extract_v($dst$$Register, T_LONG, as_VectorRegister($src$$reg),
+                 (int)($idx$$constant), as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3057,8 +3055,8 @@ instruct extractF(fRegF dst, vReg src, immI idx, vReg tmp)
   effect(TEMP tmp);
   format %{ "extractF $dst, $src, $idx\t# KILL $tmp" %}
   ins_encode %{
-    __ extract_fp_v($dst$$FloatRegister, T_FLOAT, Matcher::vector_length(this, $src),
-                    as_VectorRegister($src$$reg), (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+    __ extract_fp_v($dst$$FloatRegister, T_FLOAT, as_VectorRegister($src$$reg),
+                    (int)($idx$$constant), as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3069,8 +3067,8 @@ instruct extractD(fRegD dst, vReg src, immI idx, vReg tmp)
   effect(TEMP tmp);
   format %{ "extractD $dst, $src, $idx\t# KILL $tmp" %}
   ins_encode %{
-    __ extract_fp_v($dst$$FloatRegister, T_DOUBLE, Matcher::vector_length(this, $src),
-                    as_VectorRegister($src$$reg), (int)($idx$$constant), as_VectorRegister($tmp$$reg));
+    __ extract_fp_v($dst$$FloatRegister, T_DOUBLE, as_VectorRegister($src$$reg),
+                    (int)($idx$$constant), as_VectorRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
