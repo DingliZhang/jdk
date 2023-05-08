@@ -187,16 +187,19 @@
 
  void minmax_fp_v(VectorRegister dst,
                   VectorRegister src1, VectorRegister src2,
-                  bool is_double, bool is_min, int vector_length);
+                  bool is_double, bool is_min, int vector_length,
+                  VectorMask vm = Assembler::unmasked);
 
  void reduce_minmax_fp_v(FloatRegister dst,
                          FloatRegister src1, VectorRegister src2,
                          VectorRegister tmp1, VectorRegister tmp2,
-                         bool is_double, bool is_min, int vector_length);
+                         bool is_double, bool is_min, int vector_length,
+                         VectorMask vm = Assembler::unmasked);
 
  void reduce_integral_v(Register dst, VectorRegister tmp,
                         Register src1, VectorRegister src2,
-                        BasicType bt, int opc, int vector_length);
+                        BasicType bt, int opc, int vector_length,
+                        VectorMask vm = Assembler::unmasked);
 
  void vsetvli_helper(BasicType bt, int vector_length, LMUL vlmul = Assembler::m1, Register tmp = t0);
 
