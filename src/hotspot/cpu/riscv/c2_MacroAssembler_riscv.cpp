@@ -1489,6 +1489,7 @@ void C2_MacroAssembler::string_compare_v(Register str1, Register str2, Register 
     bnez(cnt2, loop);
     j(DONE);
   }
+
   bind(DIFFERENCE);
   slli(tmp1, tmp2, 1);
   add(str1, str1, str1_isL ? tmp2 : tmp1);
