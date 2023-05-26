@@ -1777,13 +1777,15 @@ class StubGenerator: public StubCodeGenerator {
     __ beqz(src, L_failed);
 
     // if [src_pos < 0] then return -1
-    __ bltz(src_pos, L_failed);
+    __ sign_extend(t0, src_pos, 32);
+    __ bltz(t0, L_failed);
 
     // if dst is null then return -1
     __ beqz(dst, L_failed);
 
     // if [dst_pos < 0] then return -1
-    __ bltz(dst_pos, L_failed);
+    __ sign_extend(t0, dst_pos, 32);
+    __ bltz(t0, L_failed);
 
     // registers used as temp
     const Register scratch_length    = x28; // elements count to copy
@@ -1792,7 +1794,7 @@ class StubGenerator: public StubCodeGenerator {
 
     // if [length < 0] then return -1
     __ sign_extend(scratch_length, length, 32);    // length (elements count, 32-bits value)
-    __ bltz(length, L_failed);
+    __ bltz(scratch_length, L_failed);
 
     __ load_klass(scratch_src_klass, src);
 #ifdef ASSERT
