@@ -1530,17 +1530,17 @@ void C2_MacroAssembler::char_array_compress_v(Register src, Register dst, Regist
 }
 
 // result: the number of elements had been encoded.
-void C2_MacroAssembler::encode_iso_array_v(Register src, Register dst, Register len, Register result, Register tmp) {
+void C2_MacroAssembler::encode_iso_array_v(Register src, Register dst, Register len, Register result, Register tmp, bool ascii) {
   Label loop, DIFFERENCE, DONE;
 
   BLOCK_COMMENT("encode_iso_array_v {");
   mv(result, 0);
 
   bind(loop);
-  mv(tmp, 0xff);
+  mv(tmp, ascii ? 0x7f : 0xff);
   vsetvli(t0, len, Assembler::e16, Assembler::m2);
   vle16_v(v2, src);
-  // if element > 0xff, stop
+  // if element > 0x7f/0xff, stop
   vmsgtu_vx(v1, v2, tmp);
   vfirst_m(tmp, v1);
   vmsbf_m(v0, v1);
