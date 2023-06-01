@@ -3188,9 +3188,9 @@ instruct vencode_iso_array(iRegP_R12 src, iRegP_R11 dst, iRegI_R13 len, iRegI_R1
   predicate(UseRVV && !((EncodeISOArrayNode*)n)->is_ascii());
   match(Set result (EncodeISOArray src (Binary dst len)));
   effect(TEMP_DEF result, USE_KILL src, USE_KILL dst, USE_KILL len,
-         TEMP v1, TEMP v2, TEMP v3, TEMP tmp, TEMP v0);
+         TEMP v0, TEMP v1, TEMP v2, TEMP v3, TEMP tmp);
 
-  format %{ "Encode ISO array $src,$dst,$len -> $result" %}
+  format %{ "Encode ISO array $src, $dst, $len -> $result # KILL $src, $dst, $len, $tmp, V0-V3"%}
   ins_encode %{
     __ encode_iso_array_v($src$$Register, $dst$$Register, $len$$Register,
                           $result$$Register, $tmp$$Register, false /* ascii */);
@@ -3204,9 +3204,9 @@ instruct vencode_ascii_array(iRegP_R12 src, iRegP_R11 dst, iRegI_R13 len, iRegI_
   predicate(UseRVV && ((EncodeISOArrayNode*)n)->is_ascii());
   match(Set result (EncodeISOArray src (Binary dst len)));
   effect(TEMP_DEF result, USE_KILL src, USE_KILL dst, USE_KILL len,
-         TEMP v1, TEMP v2, TEMP v3, TEMP tmp, TEMP v0);
+         TEMP v0, TEMP v1, TEMP v2, TEMP v3, TEMP tmp);
 
-  format %{ "Encode ASCII array $src,$dst,$len -> $result" %}
+  format %{ "Encode ASCII array $src, $dst, $len -> $result # KILL $src, $dst, $len, $tmp, V0-V3"%}
   ins_encode %{
     __ encode_iso_array_v($src$$Register, $dst$$Register, $len$$Register,
                           $result$$Register, $tmp$$Register, true /* ascii */);
@@ -3221,7 +3221,7 @@ instruct vstring_compress(iRegP_R12 src, iRegP_R11 dst, iRegI_R13 len, iRegI_R10
   predicate(UseRVV);
   match(Set result (StrCompressedCopy src (Binary dst len)));
   effect(TEMP_DEF result, USE_KILL src, USE_KILL dst, USE_KILL len,
-         TEMP v1, TEMP v2, TEMP v3, TEMP tmp, TEMP v0);
+         TEMP v0, TEMP v1, TEMP v2, TEMP v3, TEMP tmp);
 
   format %{ "String Compress $src,$dst -> $result    // KILL R11, R12, R13" %}
   ins_encode %{
