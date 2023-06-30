@@ -2679,7 +2679,6 @@ void TemplateTable::putfield_or_static(int byte_no, bool is_static, RewriteContr
 
   {
     Label notVolatile;
-    __ andi(x15, x15, 0x1);
     __ test_bit(t0, x15, 0);
     __ beqz(t0, notVolatile);
     __ membar(MacroAssembler::StoreStore | MacroAssembler::LoadStore);
@@ -2978,8 +2977,6 @@ void TemplateTable::fast_storefield(TosState state) {
   __ push_reg(x10);
   // X11: field offset, X12: TOS, X13: flags
   load_resolved_field_entry(x12, x12, x10, x11, x13);
-  // Test for volatile
-  __ andi(x13, x13, 0x1);
   __ pop_reg(x10);
 
   // Must prevent reordering of the following cp cache loads with bytecode load
@@ -3161,7 +3158,6 @@ void TemplateTable::fast_xaccess(TosState state) {
   {
     Label notVolatile;
     __ load_unsigned_byte(x13, Address(x12, in_bytes(ResolvedFieldEntry::flags_offset())));
-    __ andi(x13, x13, 0x1);
     __ test_bit(t0, x13, 0);
     __ beqz(t0, notVolatile);
     __ membar(MacroAssembler::LoadLoad | MacroAssembler::LoadStore);
