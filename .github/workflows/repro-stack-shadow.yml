@@ -1,0 +1,269 @@
+name: Repro Windows ARM64 StackShadowPages
+
+on:
+  push:
+    branches:
+      - test-win-aarch64
+    paths:
+      - .github/workflows/repro-stack-shadow.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  repro:
+    name: Find minimum StackShadowPages
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout matching source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: 8b41e0f62a79b3401a52e46b823a430179377b62
+
+      - name: Download fastdebug JDK from failed run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bundles-windows-aarch64-debug
+          path: bundles
+          repository: DingliZhang/jdk
+          run-id: 31308805597
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download JTReg from failed run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bundles-jtreg-8.3+1
+          path: jtreg/installed
+          repository: DingliZhang/jdk
+          run-id: 31308805597
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reproduce and find minimum StackShadowPages
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+
+          $jdkArchive = Join-Path $PWD `
+            'bundles/jdk-windows-aarch64-debug.zip'
+          $jdkDirectory = Join-Path $PWD 'bundles/jdk'
+          $jtregJar = Join-Path $PWD 'jtreg/installed/lib/jtreg.jar'
+          $test = Join-Path $PWD `
+            'test/hotspot/jtreg/runtime/valhalla/inlinetypes/HashOverflowTest.java'
+
+          if (!(Test-Path -LiteralPath $jdkArchive)) {
+            throw "JDK archive not found: $jdkArchive"
+          }
+
+          if (!(Test-Path -LiteralPath $jtregJar)) {
+            throw "JTReg jar not found: $jtregJar"
+          }
+
+          if (!(Test-Path -LiteralPath $test)) {
+            throw "Test source not found: $test"
+          }
+
+          Expand-Archive `
+            -LiteralPath $jdkArchive `
+            -DestinationPath $jdkDirectory
+
+          $java = (
+            Get-ChildItem $jdkDirectory -Recurse -Filter java.exe |
+              Where-Object {
+                $_.FullName -match '\\bin\\java\.exe$'
+              } |
+              Select-Object -First 1
+          ).FullName
+
+          if (!$java) {
+            throw 'java.exe was not found in the downloaded JDK'
+          }
+
+          $jdkRoot = Split-Path (Split-Path $java -Parent) -Parent
+
+          Write-Host "Java: $java"
+          Write-Host "JDK root: $jdkRoot"
+          Write-Host "JTReg jar: $jtregJar"
+          Write-Host "Test: $test"
+
+          & $java -version
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'The downloaded JDK could not be started'
+          }
+
+          $originalContent = Get-Content -LiteralPath $test -Raw
+          $baselineContent = $originalContent.Replace(
+            '-Xint -Xss256K',
+            '-Xint -Xss256K -XX:-CreateCoredumpOnCrash'
+          )
+
+          if ($baselineContent -eq $originalContent) {
+            throw 'Could not locate the @run VM options'
+          }
+
+          Set-Content `
+            -LiteralPath $test `
+            -Value $baselineContent `
+            -NoNewline
+
+          $baselineWork = Join-Path $PWD 'work-baseline'
+          $baselineReport = Join-Path $PWD 'report-baseline'
+
+          Write-Host ''
+          Write-Host '===== Running baseline ====='
+
+          & $java -jar $jtregJar `
+            "-jdk:$jdkRoot" `
+            "-w:$baselineWork" `
+            "-r:$baselineReport" `
+            '-verbose:fail,error,time' `
+            $test
+
+          $baselineExit = $LASTEXITCODE
+
+          Write-Host "Baseline JTReg exit code: $baselineExit"
+
+          $baselineMatches = @(
+            Get-ChildItem $baselineWork `
+              -Recurse `
+              -File `
+              -ErrorAction SilentlyContinue |
+                Where-Object {
+                  $_.Extension -eq '.jtr' -or
+                  $_.Extension -eq '.log' -or
+                  $_.Name -like 'hs_err_pid*.log'
+                } |
+                Select-String `
+                  -SimpleMatch 'Undersized StackShadowPages' `
+                  -ErrorAction SilentlyContinue
+          )
+
+          if ($baselineExit -eq 0) {
+            throw 'Baseline unexpectedly passed'
+          }
+
+          if ($baselineMatches.Count -eq 0) {
+            throw 'Baseline failed for an unexpected reason'
+          }
+
+          Write-Host ''
+          Write-Host 'Baseline successfully reproduced the failure'
+
+          $baselineMatches | ForEach-Object {
+            Write-Host "$($_.Path):$($_.LineNumber): $($_.Line)"
+          }
+
+          $firstPassingPages = $null
+
+          foreach ($pages in 26..32) {
+            Write-Host ''
+            Write-Host "===== Testing StackShadowPages=$pages ====="
+
+            $testContent = $baselineContent.Replace(
+              '-XX:-CreateCoredumpOnCrash',
+              "-XX:-CreateCoredumpOnCrash -XX:StackShadowPages=$pages"
+            )
+
+            if ($testContent -eq $baselineContent) {
+              throw "Could not add StackShadowPages=$pages"
+            }
+
+            Set-Content `
+              -LiteralPath $test `
+              -Value $testContent `
+              -NoNewline
+
+            $workDirectory = Join-Path $PWD "work-pages-$pages"
+            $reportDirectory = Join-Path $PWD "report-pages-$pages"
+
+            & $java -jar $jtregJar `
+              "-jdk:$jdkRoot" `
+              "-w:$workDirectory" `
+              "-r:$reportDirectory" `
+              '-verbose:fail,error,time' `
+              $test
+
+            $testExit = $LASTEXITCODE
+
+            Write-Host (
+              "StackShadowPages=$pages JTReg exit code: $testExit"
+            )
+
+            if ($testExit -eq 0) {
+              $firstPassingPages = $pages
+              Write-Host "StackShadowPages=$pages passed"
+              break
+            }
+
+            $pageMatches = @(
+              Get-ChildItem $workDirectory `
+                -Recurse `
+                -File `
+                -ErrorAction SilentlyContinue |
+                  Where-Object {
+                    $_.Extension -eq '.jtr' -or
+                    $_.Extension -eq '.log' -or
+                    $_.Name -like 'hs_err_pid*.log'
+                  } |
+                  Select-String `
+                    -SimpleMatch 'Undersized StackShadowPages' `
+                    -ErrorAction SilentlyContinue
+            )
+
+            if ($pageMatches.Count -eq 0) {
+              throw (
+                "StackShadowPages=$pages failed for an unexpected reason"
+              )
+            }
+
+            Write-Host (
+              "StackShadowPages=$pages failed with " +
+              "Undersized StackShadowPages"
+            )
+          }
+
+          if ($null -eq $firstPassingPages) {
+            Add-Content `
+              -LiteralPath $env:GITHUB_STEP_SUMMARY `
+              -Value 'No value from 26 through 32 passed.'
+
+            throw 'No value from 26 through 32 passed'
+          }
+
+          Write-Host ''
+          Write-Host (
+            "Minimum passing value: " +
+            "StackShadowPages=$firstPassingPages"
+          )
+
+          Add-Content `
+            -LiteralPath $env:GITHUB_STEP_SUMMARY `
+            -Value '## Windows ARM64 StackShadowPages result'
+
+          Add-Content `
+            -LiteralPath $env:GITHUB_STEP_SUMMARY `
+            -Value ''
+
+          Add-Content `
+            -LiteralPath $env:GITHUB_STEP_SUMMARY `
+            -Value (
+              "Minimum passing value: " +
+              "``StackShadowPages=$firstPassingPages``"
+            )
+
+      - name: Upload JTReg diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-aarch64-stack-shadow-jtreg-results
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            work-baseline
+            report-baseline
+            work-pages-*
+            report-pages-*
