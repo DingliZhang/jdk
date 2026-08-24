@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, 2020, Red Hat Inc. All rights reserved.
  * Copyright (c) 2020, 2023, Huawei Technologies Co., Ltd. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -72,14 +72,17 @@ address NativeCall::reloc_destination() {
   CodeBlob *code = CodeCache::find_blob(call_addr);
   assert(code != nullptr, "Could not find the containing code blob");
 
-  address stub_addr = nullptr;
   if (code->is_nmethod()) {
-    // TODO: Need to revisit this when porting the AOT features.
-    stub_addr = trampoline_stub_Relocation::get_trampoline_for(call_addr, code->as_nmethod());
+    address stub_addr = trampoline_stub_Relocation::get_trampoline_for(call_addr, code->as_nmethod());
     assert(stub_addr != nullptr, "Sanity");
+    return stub_address_destination_at(stub_addr);
   }
 
-  return stub_addr;
+  // A reloc call outside an nmethod has no trampoline stub to read the destination
+  // from. Returning nullptr keeps such a code blob out of the AOT code cache
+  // (AOTCodeCache::write_relocations() rejects it via BAD_ADDRESS_ID) instead of
+  // caching it with a destination that is only valid in the dumping JVM.
+  return nullptr;
 }
 
 void NativeCall::verify() {
@@ -131,8 +134,7 @@ bool NativeCall::set_destination_mt_safe(address dest) {
   return true;
 }
 
-// The argument passed in is the address to the stub containing the destination
-bool NativeCall::reloc_set_destination(address stub_addr) {
+void NativeCall::reloc_set_destination(address dest) {
   address call_addr = instruction_address();
   assert(NativeCall::is_at(call_addr), "unexpected code at call site");
 
@@ -140,16 +142,12 @@ bool NativeCall::reloc_set_destination(address stub_addr) {
   assert(code != nullptr, "Could not find the containing code blob");
 
   if (code->is_nmethod()) {
-    // TODO: Need to revisit this when porting the AOT features.
+    address stub_addr = trampoline_stub_Relocation::get_trampoline_for(call_addr, code->as_nmethod());
     assert(stub_addr != nullptr, "Sanity");
-    assert(stub_addr == trampoline_stub_Relocation::get_trampoline_for(call_addr, code->as_nmethod()), "Sanity");
+    set_stub_address_destination_at(stub_addr, dest);
     MacroAssembler::pd_patch_instruction_size(call_addr, stub_addr); // patches auipc + ld to stub_addr
-
-    address dest = stub_address_destination_at(stub_addr);
     optimize_call(dest, false); // patches jalr -> jal/jal -> jalr depending on dest
   }
-
-  return true;
 }
 
 void NativeCall::set_stub_address_destination_at(address dest, address value) {

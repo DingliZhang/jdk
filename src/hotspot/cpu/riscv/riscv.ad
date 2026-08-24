@@ -2248,7 +2248,15 @@ encode %{
         __ mov_metadata(dst_reg, (Metadata*)con);
       } else {
         assert(rtype == relocInfo::none || rtype == relocInfo::external_word_type, "unexpected reloc type");
-        __ mv(dst_reg, $src$$constant);
+        if (rtype == relocInfo::external_word_type) {
+          // Use a relocation so that the address can be fixed up when this code
+          // is loaded from the AOT code cache in a new JVM instance.
+          __ movptr(dst_reg, Address(con, rtype));
+        } else {
+          // Not a real address (e.g. a bci used as a jsr return address);
+          // load it as a plain immediate.
+          __ mv(dst_reg, $src$$constant);
+        }
       }
     }
   %}
