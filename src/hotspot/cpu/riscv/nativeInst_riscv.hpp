@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2026, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, 2018, Red Hat Inc. All rights reserved.
  * Copyright (c) 2020, 2023, Huawei Technologies Co., Ltd. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -144,7 +144,7 @@ class NativeCall: private NativeInstruction {
   // patch stub to target address of the reloc call
   bool set_destination_mt_safe(address dest);
   // patch reloc call to stub address
-  bool reloc_set_destination(address dest);
+  void reloc_set_destination(address dest);
 
   static bool is_at(address addr);
   static bool is_call_before(address return_address);
