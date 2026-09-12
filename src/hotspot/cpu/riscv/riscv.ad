@@ -2248,14 +2248,16 @@ encode %{
         __ mov_metadata(dst_reg, (Metadata*)con);
       } else {
         assert(rtype == relocInfo::none || rtype == relocInfo::external_word_type, "unexpected reloc type");
-        // Load fake address constants as a plain immediate. They are not real
-        // addresses (a bci may be used as a jsr return address, and compiling
-        // an unreachable unsafe access can produce a bad base) so they are of
-        // no interest to the AOT code cache, and movptr() only materializes
-        // the low 48 bits.
+        // Two kinds of constants are loaded as a plain immediate. The first two
+        // tests catch fake addresses, which the AOT code cache has no interest in
+        // fixing up: relocInfo::none marks constants that are not addresses at all
+        // (a bci used as a jsr return address, say), and compiling an unreachable
+        // unsafe access can hand us a base in the first page. The last test is a
+        // limitation rather than a category: movptr() materializes only the low 48
+        // bits, which is what the rest of the port assumes about addresses too.
         if (rtype == relocInfo::none ||
-            (uint64_t)con >= (1ull << 48) ||
-            con < (address)(uintptr_t)os::vm_page_size()) {
+            con < (address)(uintptr_t)os::vm_page_size() ||
+            (uint64_t)con >= (1ull << 48)) {
           __ mv(dst_reg, $src$$constant);
         } else {
           // Use a relocation so that the address can be fixed up when this code

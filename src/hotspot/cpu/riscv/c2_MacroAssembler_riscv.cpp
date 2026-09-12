@@ -1842,11 +1842,12 @@ void C2_MacroAssembler::arrays_hashcode_v(Register ary, Register cnt, Register r
   andi(t0, cnt, ~(stride - 1));
   beqz(t0, SCALAR_TAIL);
 
+  // The relocation has to name the stub entry itself, since that is the address
+  // registered with the AOT code cache. Advance to &coeffs[1] afterwards: that is
+  // what vle32.v below needs as its base, and it has no displacement to spare.
   la(t1, ExternalAddress(adr_pows31));
-  // Keep the relocation target at the registered stub entry, then skip the
-  // first element when loading the vector coefficients.
   addi(t1, t1, sizeof(jint));
-  lw(pow31_highest, Address(t1, -1 * sizeof(jint)));
+  lw(pow31_highest, Address(t1, -1 * sizeof(jint))); // coeffs[0]
 
   vsetvli(consumed, cnt, Assembler::e32, Assembler::m2);
   vle32_v(v_coeffs, t1); // 31^^(stride - 1) ... 31^^0

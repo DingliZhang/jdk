@@ -3087,13 +3087,18 @@ int MacroAssembler::patch_metadata(address insn_addr, address metadata) {
   if (MacroAssembler::is_li32_at(insn_addr)) {
     // Move narrow klass
     Metadata* value = reinterpret_cast<Metadata*>(metadata);
-    assert(value != nullptr && value->is_klass(), "narrow metadata must be a klass");
+    // Only set_narrow_klass() emits li32 for a metadata_type relocation, so a null
+    // or non-Klass value here would mean the caller lost track of what it emitted.
+    // Check it in product builds too, since encode() would silently produce garbage.
+    guarantee(value != nullptr && value->is_klass(), "narrow metadata must be a klass");
     narrowKlass nk = CompressedKlassPointers::encode(static_cast<Klass*>(value));
     return patch_imm_in_li32(insn_addr, static_cast<int32_t>(nk));
-  } else if (MacroAssembler::is_movptr1_at(insn_addr) ||
-             MacroAssembler::is_movptr2_at(insn_addr)) {
+  } else if (MacroAssembler::is_movptr1_at(insn_addr)) {
     // Move wide metadata
-    return pd_patch_instruction_size(insn_addr, metadata);
+    return patch_addr_in_movptr1(insn_addr, metadata);
+  } else if (MacroAssembler::is_movptr2_at(insn_addr)) {
+    // Move wide metadata
+    return patch_addr_in_movptr2(insn_addr, metadata);
   }
   ShouldNotReachHere();
   return -1;
@@ -3125,9 +3130,9 @@ void MacroAssembler::movptr(Register Rd, address addr, Register temp) {
 void MacroAssembler::movptr(Register Rd, address addr, int32_t &offset, Register temp) {
   uint64_t uimm64 = (uint64_t)addr;
 #ifndef PRODUCT
-  // Skip the block comment when dumping the AOT code cache: the comment text is
-  // the build-time address, which is meaningless in a future JVM instance and
-  // would flood the AOT C string table with unique entries.
+  // Skip the block comment when dumping the AOT code cache: it spells out the
+  // address as seen while dumping, which is meaningless in the JVM instance that
+  // will later load this code.
   if (!AOTCodeCache::is_on_for_dump()) {
     char buffer[64];
     os::snprintf_checked(buffer, sizeof(buffer), "0x%" PRIx64, uimm64);

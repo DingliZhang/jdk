@@ -133,7 +133,13 @@ class NativeCall: private NativeInstruction {
   address instruction_address() const      { return addr_at(0); }
   address next_instruction_address() const { return addr_at(NativeCall::instruction_size); }
   address return_address() const           { return addr_at(NativeCall::instruction_size); }
+  // Decode the stub address out of the call site instructions and read the
+  // destination from it.
   address destination() const;
+  // Find the stub through the trampoline relocation and read the destination
+  // from it. After the code has been moved the auipc pair still refers to the
+  // old location, so the relocation is the only way to reach the stub. Returns
+  // the call site itself if there is no stub to read from.
   address reloc_destination();
 
   void verify_alignment() {} // do nothing on riscv
@@ -143,7 +149,8 @@ class NativeCall: private NativeInstruction {
   void set_destination(address dest) { Unimplemented(); }
   // patch stub to target address of the reloc call
   bool set_destination_mt_safe(address dest);
-  // patch reloc call to stub address
+  // Store the final destination into the trampoline stub, point the call site at
+  // that stub and pick the shortest reachable call instruction for it.
   void reloc_set_destination(address dest);
 
   static bool is_at(address addr);

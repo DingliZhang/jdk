@@ -124,9 +124,13 @@ void metadata_Relocation::pd_fix_value(address x) {
 }
 
 address trampoline_stub_Relocation::pd_destination() {
-  return reinterpret_cast<address>(Bytes::get_native_u8(addr()));
+  return reinterpret_cast<address>(MacroAssembler::get_native_u8(addr()));
 }
 
 void trampoline_stub_Relocation::pd_set_destination(address x) {
-  Bytes::put_native_u8(addr(), reinterpret_cast<uint64_t>(x));
+  // No release needed here, unlike in NativeCall::set_stub_address_destination_at():
+  // relocations are applied while the code is still private to this thread, either
+  // when moving a code buffer or when loading a blob from the AOT code cache, so no
+  // other thread can be executing the call site yet.
+  MacroAssembler::put_native_u8(addr(), reinterpret_cast<uint64_t>(x));
 }

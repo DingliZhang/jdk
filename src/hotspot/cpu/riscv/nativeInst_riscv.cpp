@@ -74,15 +74,19 @@ address NativeCall::reloc_destination() {
 
   if (code->is_nmethod()) {
     address stub_addr = trampoline_stub_Relocation::get_trampoline_for(call_addr, code->as_nmethod());
-    assert(stub_addr != nullptr, "Sanity");
-    return stub_address_destination_at(stub_addr);
+    if (stub_addr != nullptr) {
+      return stub_address_destination_at(stub_addr);
+    }
   }
 
-  // A reloc call outside an nmethod has no trampoline stub to read the destination
-  // from. Returning nullptr keeps such a code blob out of the AOT code cache
-  // (AOTCodeCache::write_id_for_relocations() rejects it via BAD_ADDRESS_ID)
-  // instead of caching a destination that is only valid in the dumping JVM.
-  return nullptr;
+  // There is no trampoline stub to read the destination from: either this is not
+  // an nmethod, or no trampoline was recorded for this call site. Report the call
+  // site itself, which is how shared code spells "the destination of this call is
+  // not known". AOTCodeCache::write_id_for_relocations() then stores
+  // NO_RELOCATION_ID for the relocation and leaves the call site untouched when
+  // the blob is loaded, rather than baking in an address that is only valid in
+  // the JVM that produced the cache.
+  return call_addr;
 }
 
 void NativeCall::verify() {
@@ -143,7 +147,9 @@ void NativeCall::reloc_set_destination(address dest) {
 
   if (code->is_nmethod()) {
     address stub_addr = trampoline_stub_Relocation::get_trampoline_for(call_addr, code->as_nmethod());
-    assert(stub_addr != nullptr, "Sanity");
+    // Unlike reloc_destination(), there is no way to carry on without the stub:
+    // the destination has nowhere to go. Check it in product builds as well.
+    guarantee(stub_addr != nullptr, "no trampoline stub recorded for reloc call");
     set_stub_address_destination_at(stub_addr, dest);
     MacroAssembler::pd_patch_instruction_size(call_addr, stub_addr); // patches auipc + ld to stub_addr
     optimize_call(dest, false); // patches jalr -> jal/jal -> jalr depending on dest
