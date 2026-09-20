@@ -5849,6 +5849,8 @@ bool MacroAssembler::move_helper(VMReg from, VMReg to, BasicType bt, RegState re
             assert(bt == T_FLOAT, "must be float");
             flw(to->as_FloatRegister(), from_addr);
           }
+        } else if (is_subword_type(bt) || bt == T_INT) {
+          lw(to->as_Register(), from_addr);
         } else {
           ld(to->as_Register(), from_addr);
         }
