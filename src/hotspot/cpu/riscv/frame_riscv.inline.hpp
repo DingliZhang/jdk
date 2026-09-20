@@ -440,6 +440,34 @@ frame frame::sender_raw(RegisterMap* map) const {
   return frame(sender_sp(), link(), sender_pc());
 }
 
+// Check for a method with scalarized value type arguments that needs
+// a stack repair and return the repaired sender stack pointer.
+ALWAYSINLINE intptr_t* frame::repair_sender_sp(nmethod* nm, intptr_t* sp, intptr_t** frame_top) {
+  assert(nm != nullptr && nm->needs_stack_repair(), "");
+  // The shared caller passes the nominal sender SP on RISC-V.
+  assert((intptr_t*)frame_top == sp + nm->frame_size(), "unexpected frame top");
+  intptr_t** saved_fp_addr = (intptr_t**)((intptr_t*)frame_top + link_offset);
+  intptr_t frame_size_in_bytes = *((intptr_t*)saved_fp_addr - 1);
+  assert(frame_size_in_bytes % StackAlignmentInBytes == 0, "unaligned frame size");
+  int real_frame_size = frame_size_in_bytes / wordSize + metadata_words_at_bottom;
+  assert(real_frame_size >= nm->frame_size() && real_frame_size <= 1000000, "invalid frame size");
+  return sp + real_frame_size;
+}
+
+ALWAYSINLINE frame::CompiledFramePointers frame::compiled_frame_details() const {
+  assert(_cb->frame_size() > 0, "must have non-zero frame size");
+  intptr_t* sender_sp = unextended_sp() + _cb->frame_size();
+  nmethod* nm = _cb->as_nmethod_or_null();
+  if (nm != nullptr && nm->needs_stack_repair()) {
+    sender_sp = repair_sender_sp(nm, unextended_sp(), (intptr_t**)sender_sp);
+  }
+  CompiledFramePointers cfp;
+  cfp.sender_sp = sender_sp;
+  cfp.saved_fp_addr = (intptr_t**)(sender_sp + link_offset);
+  cfp.sender_pc_addr = (address*)(sender_sp + return_addr_offset);
+  return cfp;
+}
+
 //------------------------------------------------------------------------------
 // frame::sender_for_compiled_frame
 frame frame::sender_for_compiled_frame(RegisterMap* map) const {
@@ -448,20 +476,30 @@ frame frame::sender_for_compiled_frame(RegisterMap* map) const {
   // have to find it relative to the unextended sp
 
   assert(_cb->frame_size() > 0, "must have non-zero frame size");
-  intptr_t* l_sender_sp = unextended_sp() + _cb->frame_size();
-
-  // the return_address is always the word on the stack
-  address sender_pc = (address) *(l_sender_sp + frame::return_addr_offset);
-
-  intptr_t** saved_fp_addr = (intptr_t**) (l_sender_sp + frame::link_offset);
+  CompiledFramePointers cfp = compiled_frame_details();
+  intptr_t* l_sender_sp = cfp.sender_sp;
+  address sender_pc = *cfp.sender_pc_addr;
+  intptr_t** saved_fp_addr = cfp.saved_fp_addr;
 
   assert(map != nullptr, "map must be set");
   if (map->update_map()) {
     // Tell GC to use argument oopmaps for some runtime stubs that need it.
     // For C1, the runtime stub might not have oop maps, so set this flag
     // outside of update_register_map.
-    if (!_cb->is_nmethod()) { // compiled frames do not use callee-saved registers
-      map->set_include_argument_oops(_cb->caller_must_gc_arguments(map->thread()));
+    bool c1_buffering = false;
+#ifdef COMPILER1
+    nmethod* nm = _cb->as_nmethod_or_null();
+    if (nm != nullptr && nm->is_compiled_by_c1() && nm->method()->has_scalarized_args() &&
+        pc() < nm->verified_value_entry_point()) {
+      // The VEP and VIEP(RO) of C1-compiled methods call buffer_value_args_xxx
+      // before doing any argument shuffling, so we need to scan the oops
+      // as the caller passes them.
+      c1_buffering = true;
+    }
+#endif
+    if (!_cb->is_nmethod() || c1_buffering) { // compiled frames do not use callee-saved registers
+      bool caller_args = _cb->caller_must_gc_arguments(map->thread()) || c1_buffering;
+      map->set_include_argument_oops(caller_args);
       if (oop_map() != nullptr) {
         _oop_map->update_register_map(this, map);
       }

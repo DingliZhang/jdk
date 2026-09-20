@@ -387,7 +387,47 @@ int LIR_Assembler::emit_deopt_handler() {
 void LIR_Assembler::return_op(LIR_Opr result, C1SafepointPollStub* code_stub) {
   assert(result->is_illegal() || !result->is_single_cpu() || result->as_register() == x10, "word returns are in x10");
 
-  assert(!ValueTypeReturnedAsFields, "unimplemented");
+  if (ValueTypeReturnedAsFields) {
+    // Check if we are returning a non-null value type and load its fields into registers
+    ciType* return_type = compilation()->method()->return_type();
+    if (return_type->is_value_klass()) {
+      ciValueKlass* vk = return_type->as_value_klass();
+      if (vk->can_be_returned_as_fields()) {
+        address unpack_handler = vk->unpack_handler();
+        assert(unpack_handler != nullptr, "must be");
+        __ far_call(RuntimeAddress(unpack_handler));
+      }
+    } else if (return_type->is_instance_klass() && (!return_type->is_loaded() || StressCallingConvention)) {
+      Label skip;
+      Label not_null;
+      __ bnez(x10, not_null);
+      // Returned value is null, zero all return registers because they may belong to oop fields
+      __ mv(j_rarg0, zr);
+      __ mv(j_rarg1, zr);
+      __ mv(j_rarg2, zr);
+      __ mv(j_rarg3, zr);
+      __ mv(j_rarg4, zr);
+      __ mv(j_rarg5, zr);
+      __ mv(j_rarg6, zr);
+      __ j(skip);
+      __ bind(not_null);
+
+      // Check if we are returning a non-null value type and load its fields into registers
+      __ test_oop_is_not_value_type(x10, t1, skip, /* can_be_null= */ false);
+
+      // Load fields from a buffered value with a value class specific handler
+      __ load_klass(t1 /*dst*/, x10 /*src*/, t0 /*tmp*/);
+      __ ld(t1, Address(t1, ValueKlass::adr_members_offset()));
+      __ ld(t1, Address(t1, ValueKlass::unpack_handler_offset()));
+      // Unpack handler can be null if value type is not scalarizable in returns
+      __ beqz(t1, skip);
+      __ jalr(t1);
+
+      __ bind(skip);
+    }
+    // At this point, x10 points to the value object (for interpreter or C1 caller).
+    // The fields of the object are copied into registers (for C2 caller).
+  }
 
   // Pop the stack before the safepoint code
   __ remove_frame(initial_frame_size_in_bytes());
@@ -403,8 +443,7 @@ void LIR_Assembler::return_op(LIR_Opr result, C1SafepointPollStub* code_stub) {
 }
 
 int LIR_Assembler::store_value_type_fields_to_buf(ciValueKlass* vk) {
-  Unimplemented();
-  return 0;
+  return (__ store_value_type_fields_to_buf(vk, false));
 }
 
 int LIR_Assembler::safepoint_poll(LIR_Opr tmp, CodeEmitInfo* info) {
@@ -1380,7 +1419,7 @@ void LIR_Assembler::emit_profile_value_type(LIR_OpProfileValueType* op) {
 }
 
 void LIR_Assembler::check_orig_pc() {
-  Unimplemented();
+  __ ld(t1, frame_map()->address_for_orig_pc_addr());
 }
 
 void LIR_Assembler::emit_compare_and_swap(LIR_OpCompareAndSwap* op) {

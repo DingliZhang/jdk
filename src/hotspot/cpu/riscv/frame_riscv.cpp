@@ -151,6 +151,13 @@ bool frame::safe_for_sender(JavaThread *thread) {
         return false;
       }
 
+      nmethod* nm = _cb->as_nmethod_or_null();
+      if (nm != nullptr && nm->needs_stack_repair()) {
+        sender_sp = repair_sender_sp(nm, _unextended_sp, (intptr_t**)sender_sp);
+        if (!thread->is_in_full_stack_checked((address)sender_sp)) {
+          return false;
+        }
+      }
       sender_unextended_sp = sender_sp;
       sender_pc = (address) *(sender_sp - 1);
       saved_fp = (intptr_t*) *(sender_sp - 2);
@@ -594,8 +601,9 @@ void frame::describe_pd(FrameValues& values, int frame_no) {
       ret_pc_loc = fp() + return_addr_offset;
       fp_loc = fp();
     } else {
-      ret_pc_loc = real_fp() - 1;
-      fp_loc = real_fp() - 2;
+      CompiledFramePointers cfp = compiled_frame_details();
+      ret_pc_loc = (intptr_t*)cfp.sender_pc_addr;
+      fp_loc = (intptr_t*)cfp.saved_fp_addr;
     }
     address ret_pc = *(address*)ret_pc_loc;
     values.describe(frame_no, ret_pc_loc,
@@ -620,17 +628,17 @@ frame::frame(void* ptr_sp, void* ptr_fp, void* pc) : _on_heap(false) {
 
 #endif
 
-// Check for a method with scalarized value type arguments that needs
-// a stack repair and return the repaired sender stack pointer.
-
-intptr_t* frame::repair_sender_sp(nmethod* nm, intptr_t* sp, intptr_t** saved_fp_addr) {
-  Unimplemented();
-  return nullptr;
-}
-
 bool frame::was_augmented_on_entry(int& real_size) const {
   assert(_cb != nullptr && _cb->is_nmethod(), "");
-  assert(!_cb->as_nmethod()->needs_stack_repair(), "unimplemented");
+  if (_cb->as_nmethod()->needs_stack_repair()) {
+    // The stack increment resides just below the saved FP on the stack and
+    // records the total frame size excluding the two words for saving FP and RA
+    // (see MacroAssembler::remove_frame).
+    intptr_t* real_frame_size_addr = unextended_sp() + _cb->frame_size() + link_offset - 1;
+    log_trace(continuations)("real_frame_size is addr is " INTPTR_FORMAT, p2i(real_frame_size_addr));
+    real_size = (*real_frame_size_addr / wordSize) + metadata_words_at_bottom;
+    return real_size != _cb->frame_size();
+  }
   real_size = _cb->frame_size();
   return false;
 }

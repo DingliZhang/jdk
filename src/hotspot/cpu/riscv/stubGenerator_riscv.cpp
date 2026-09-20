@@ -475,20 +475,26 @@ class StubGenerator: public StubCodeGenerator {
     // T_OBJECT, T_LONG, T_FLOAT or T_DOUBLE is treated as T_INT)
     // n.b. this assumes Java returns an integral result in x10
     // and a floating result in j_farg0
-    __ ld(j_rarg2, result);
-    Label is_long, is_float, is_double, exit;
-    __ ld(j_rarg1, result_type);
+    // All of j_rargN may be used to return value type fields so be careful
+    // not to clobber those.
+    // SharedRuntime::generate_buffered_value_type_adapter() knows the register
+    // assignment of Rresult below.
+    Register Rresult = x30;
+    Register Rtype = x7;
+    __ ld(Rresult, result);
+    Label check_value, is_long, is_float, is_double, exit;
+    __ ld(Rtype, result_type);
     __ mv(t0, (u1)T_OBJECT);
-    __ beq(j_rarg1, t0, is_long);
+    __ beq(Rtype, t0, check_value);
     __ mv(t0, (u1)T_LONG);
-    __ beq(j_rarg1, t0, is_long);
+    __ beq(Rtype, t0, is_long);
     __ mv(t0, (u1)T_FLOAT);
-    __ beq(j_rarg1, t0, is_float);
+    __ beq(Rtype, t0, is_float);
     __ mv(t0, (u1)T_DOUBLE);
-    __ beq(j_rarg1, t0, is_double);
+    __ beq(Rtype, t0, is_double);
 
     // handle T_INT case
-    __ sw(x10, Address(j_rarg2));
+    __ sw(x10, Address(Rresult));
 
     __ BIND(exit);
 
@@ -561,16 +567,27 @@ class StubGenerator: public StubCodeGenerator {
 
     // handle return types different from T_INT
 
+    __ BIND(check_value);
+    if (ValueTypeReturnedAsFields) {
+      __ andi(t1, x10, 1);
+      __ beqz(t1, is_long);
+      __ andi(t1, x10, -2);
+      __ ld(t1, Address(t1, ValueKlass::adr_members_offset()));
+      __ ld(t1, Address(t1, ValueKlass::pack_handler_jobject_offset()));
+      __ jalr(t1);
+      __ j(exit);
+    }
+
     __ BIND(is_long);
-    __ sd(x10, Address(j_rarg2, 0));
+    __ sd(x10, Address(Rresult, 0));
     __ j(exit);
 
     __ BIND(is_float);
-    __ fsw(j_farg0, Address(j_rarg2, 0), t0);
+    __ fsw(j_farg0, Address(Rresult, 0), t0);
     __ j(exit);
 
     __ BIND(is_double);
-    __ fsd(j_farg0, Address(j_rarg2, 0), t0);
+    __ fsd(j_farg0, Address(Rresult, 0), t0);
     __ j(exit);
 
     // record the stub entry and end plus the auxiliary entry
@@ -5223,6 +5240,24 @@ class StubGenerator: public StubCodeGenerator {
 
 #endif // COMPILER2
 
+  static void save_return_registers(MacroAssembler* masm) {
+    const int count = ValueTypeReturnedAsFields ? 8 : 1;
+    masm->sub(sp, sp, 2 * count * wordSize);
+    for (int i = 0; i < count; i++) {
+      masm->sd(as_Register(x10->encoding() + i), Address(sp, i * wordSize));
+      masm->fsd(as_FloatRegister(f10->encoding() + i), Address(sp, (count + i) * wordSize));
+    }
+  }
+
+  static void restore_return_registers(MacroAssembler* masm) {
+    const int count = ValueTypeReturnedAsFields ? 8 : 1;
+    for (int i = 0; i < count; i++) {
+      masm->ld(as_Register(x10->encoding() + i), Address(sp, i * wordSize));
+      masm->fld(as_FloatRegister(f10->encoding() + i), Address(sp, (count + i) * wordSize));
+    }
+    masm->add(sp, sp, 2 * count * wordSize);
+  }
+
   address generate_cont_thaw(Continuation::thaw_kind kind) {
     bool return_barrier = Continuation::is_thaw_return_barrier(kind);
     bool return_barrier_exception = Continuation::is_thaw_return_barrier_exception(kind);
@@ -5245,9 +5280,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (return_barrier) {
       // preserve possible return value from a method returning to the return barrier
-      __ subi(sp, sp, 2 * wordSize);
-      __ fsd(f10, Address(sp, 0 * wordSize));
-      __ sd(x10, Address(sp, 1 * wordSize));
+      save_return_registers(_masm);
     }
 
     __ mv(c_rarg1, (return_barrier ? 1 : 0));
@@ -5256,9 +5289,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (return_barrier) {
       // restore return value (no safepoint in the call to thaw, so even an oop return value should be OK)
-      __ ld(x10, Address(sp, 1 * wordSize));
-      __ fld(f10, Address(sp, 0 * wordSize));
-      __ addi(sp, sp, 2 * wordSize);
+      restore_return_registers(_masm);
     }
 
 #ifndef PRODUCT
@@ -5283,9 +5314,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (return_barrier) {
       // save original return value -- again
-      __ subi(sp, sp, 2 * wordSize);
-      __ fsd(f10, Address(sp, 0 * wordSize));
-      __ sd(x10, Address(sp, 1 * wordSize));
+      save_return_registers(_masm);
     }
 
     // If we want, we can templatize thaw by kind, and have three different entries
@@ -5296,9 +5325,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (return_barrier) {
       // restore return value (no safepoint in the call to thaw, so even an oop return value should be OK)
-      __ ld(x10, Address(sp, 1 * wordSize));
-      __ fld(f10, Address(sp, 0 * wordSize));
-      __ addi(sp, sp, 2 * wordSize);
+      restore_return_registers(_masm);
     } else {
       __ mv(x10, zr); // return 0 (success) from doYield
     }
