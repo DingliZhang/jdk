@@ -182,8 +182,15 @@
   }
 
  public:
+  struct CompiledFramePointers {
+    intptr_t* sender_sp;
+    intptr_t** saved_fp_addr;
+    address* sender_pc_addr;
+  };
+  CompiledFramePointers compiled_frame_details() const;
+
   // Support for scalarized value type calling convention
-  static intptr_t* repair_sender_sp(nmethod* nm, intptr_t* sp, intptr_t** saved_fp_addr);
+  static intptr_t* repair_sender_sp(nmethod* nm, intptr_t* sp, intptr_t** frame_top);
   bool was_augmented_on_entry(int& real_size) const;
 
   // Constructors

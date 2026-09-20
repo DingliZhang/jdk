@@ -887,6 +887,7 @@ public:
   // runtime call except t0 and t1. (They are always
   // temporary registers, so we don't have to protect them.)
   // Additional registers can be excluded in a passed RegSet.
+  static RegSet call_clobbered_gp_registers();
   void push_call_clobbered_registers_except(RegSet exclude);
   void pop_call_clobbered_registers_except(RegSet exclude);
 
@@ -1313,8 +1314,9 @@ public:
   // Frame creation and destruction shared between JITs.
   void build_frame(int framesize);
   void remove_frame(int framesize);
+  void save_stack_increment(int sp_inc, int frame_size);
 
-  void verified_entry(Compile* C, int sp_inc);
+  void verified_entry(Compile* C, int sp_inc, bool do_stack_bang = true);
 
   void reserved_stack_check();
 

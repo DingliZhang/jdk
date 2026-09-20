@@ -253,18 +253,25 @@ void C1_MacroAssembler::allocate_array(Register obj, Register len, Register tmp1
   verify_oop(obj);
 }
 
+void C1_MacroAssembler::build_frame_helper(int frame_size_in_bytes, int sp_offset_for_orig_pc, bool reset_orig_pc) {
+  MacroAssembler::build_frame(frame_size_in_bytes);
+
+  if (reset_orig_pc) {
+    // Zero orig_pc to detect deoptimization during buffering in the entry points
+    sd(zr, Address(sp, sp_offset_for_orig_pc));
+  }
+}
+
 void C1_MacroAssembler::build_frame(int frame_size_in_bytes, int bang_size_in_bytes,
                                     int sp_offset_for_orig_pc,
                                     bool has_scalarized_args,
                                     Label* verified_value_entry_label) {
   assert(bang_size_in_bytes >= frame_size_in_bytes, "stack bang size incorrect");
 
-  assert(!has_scalarized_args, "");
-
   // Make sure there is enough stack space for this method's activation.
   // Note that we do this before creating a frame.
   generate_stack_overflow_check(bang_size_in_bytes);
-  MacroAssembler::build_frame(frame_size_in_bytes);
+  build_frame_helper(frame_size_in_bytes, sp_offset_for_orig_pc, has_scalarized_args);
 
   // Insert nmethod entry barrier into frame.
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
@@ -286,10 +293,60 @@ void C1_MacroAssembler::verified_entry(bool breakAtEntry) {
   nop();  // 4 bytes
 }
 
-int C1_MacroAssembler::scalarized_entry(const CompiledEntrySignature* ces, int frame_size_in_bytes, int bang_size_in_bytes,
-                                        int sp_offset_for_orig_pc, Label& verified_value_entry_label, bool is_value_ro_entry) {
-  Unimplemented();
-  return 0;
+int C1_MacroAssembler::scalarized_entry(const CompiledEntrySignature* ces, int frame_size_in_bytes, int bang_size_in_bytes, int sp_offset_for_orig_pc, Label& verified_value_entry_label, bool is_value_ro_entry) {
+  assert(ValueTypePassFieldsAsArgs, "sanity");
+  // Make sure there is enough stack space for this method's activation.
+  assert(bang_size_in_bytes >= frame_size_in_bytes, "stack bang size incorrect");
+  generate_stack_overflow_check(bang_size_in_bytes);
+
+  GrowableArray<SigEntry>* sig    = ces->sig();
+  GrowableArray<SigEntry>* sig_cc = is_value_ro_entry ? ces->sig_cc_ro() : ces->sig_cc();
+  VMRegPair* regs      = ces->regs();
+  VMRegPair* regs_cc   = is_value_ro_entry ? ces->regs_cc_ro() : ces->regs_cc();
+  int args_on_stack    = ces->args_on_stack();
+  int args_on_stack_cc = is_value_ro_entry ? ces->args_on_stack_cc_ro() : ces->args_on_stack_cc();
+
+  assert(sig->length() <= sig_cc->length(), "Zero-sized value class not allowed!");
+  BasicType* sig_bt = NEW_RESOURCE_ARRAY(BasicType, sig_cc->length());
+  int args_passed = sig->length();
+  int args_passed_cc = SigEntry::fill_sig_bt(sig_cc, sig_bt);
+
+  // Create a temp frame so we can call into the runtime. It must be properly set up to accommodate GC.
+  build_frame_helper(frame_size_in_bytes, sp_offset_for_orig_pc, true);
+
+  // The runtime call might safepoint, make sure nmethod entry barrier is executed
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  // C1 code is not hot enough to micro optimize the nmethod entry barrier with an out-of-line stub
+  bs->nmethod_entry_barrier(this, nullptr /* slow_path */, nullptr /* continuation */, nullptr /* guard */);
+
+  mv(x9, (intptr_t) ces->method());
+  if (is_value_ro_entry) {
+    far_call(RuntimeAddress(Runtime1::entry_for(StubId::c1_buffer_value_args_no_receiver_id)));
+  } else {
+    far_call(RuntimeAddress(Runtime1::entry_for(StubId::c1_buffer_value_args_id)));
+  }
+  int rt_call_offset = offset();
+
+  // The runtime call returns the new array in x18 instead of the usual x10
+  // because x10 is also j_rarg7 which may be holding a live argument here.
+  Register val_array = x18;
+
+  // Remove the temp frame
+  MacroAssembler::remove_frame(frame_size_in_bytes);
+
+  assert(args_on_stack <= args_on_stack_cc, "Sanity check");
+
+  shuffle_value_args(true, is_value_ro_entry, sig_cc,
+                     args_passed_cc, args_on_stack_cc, regs_cc, // from
+                     args_passed, args_on_stack, regs,          // to
+                     0, val_array);
+
+  // Create the real frame. Below jump will then skip over the stack banging and frame
+  // setup code in the verified_value_entry (which has a different real_frame_size).
+  build_frame_helper(frame_size_in_bytes, sp_offset_for_orig_pc, false);
+
+  j(verified_value_entry_label);
+  return rt_call_offset;
 }
 
 void C1_MacroAssembler::load_parameter(int offset_in_words, Register reg) {

@@ -225,15 +225,6 @@ void VM_Version::common_initialize() {
       FLAG_SET_DEFAULT(UseCRC32CIntrinsics, false);
     }
   }
-
-  if (ValueTypePassFieldsAsArgs) {
-    warning("ValueTypePassFieldsAsArgs is not supported on this CPU");
-    FLAG_SET_DEFAULT(ValueTypePassFieldsAsArgs, false);
-  }
-  if (ValueTypeReturnedAsFields) {
-    warning("ValueTypeReturnedAsFields is not supported on this CPU");
-    FLAG_SET_DEFAULT(ValueTypeReturnedAsFields, false);
-  }
 }
 
 #ifdef COMPILER2
